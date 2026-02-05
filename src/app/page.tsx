@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockUsers } from '@/lib/mock-data';
@@ -8,7 +8,10 @@ import Image from 'next/image';
 
 export default function Home() {
   const router = useRouter();
-  const { user, login, switchUser } = useAuth();
+  const { user, login } = useAuth();
+  const [email, setEmail] = useState('jane.doe@techcorp.com');
+  const [password, setPassword] = useState('demo123');
+  const [role, setRole] = useState('employee');
 
   useEffect(() => {
     if (user) {
@@ -23,12 +26,29 @@ export default function Home() {
     }
   }, [user, router]);
 
-  const handleQuickLogin = (email: string) => {
+  const handleRoleChange = (selectedRole: string) => {
+    setRole(selectedRole);
+    
+    // Auto-fill email and password based on role
+    if (selectedRole === 'super_admin') {
+      setEmail('admin@endevo.com');
+      setPassword('admin123');
+    } else if (selectedRole === 'hr_admin') {
+      setEmail('hr@techcorp.com');
+      setPassword('hr123');
+    } else {
+      setEmail('jane.doe@techcorp.com');
+      setPassword('demo123');
+    }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
     login(email);
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           {/* Logo */}
@@ -43,104 +63,81 @@ export default function Home() {
                 priority
               />
             </div>
-            <p className="mt-2 text-lg" style={{ color: 'var(--endevo-deep-space-tint-2)' }}>Employee Legacy Readiness Platform</p>
+            <p className="mt-2 text-lg text-gray-700">Employee Legacy Readiness Platform</p>
           </div>
 
-          {/* Demo Login Card */}
+          {/* Login Form Card */}
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Demo Login</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
             <p className="text-sm text-gray-600 mb-6">
-              Select a user role to explore the platform
+              Sign in to access your dashboard
             </p>
 
-            <div className="space-y-3">
-              {/* Super Admin */}
-              <button
-                onClick={() => handleQuickLogin('admin@endevo.com')}
-                className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:bg-blue-50 transition-all group"
-                style={{ 
-                  borderColor: 'var(--endevo-deep-space-tint-4)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-setting-sun)';
-                  e.currentTarget.style.backgroundColor = 'var(--endevo-setting-sun-tint-2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-deep-space-tint-4)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      ENDevo Super Admin
-                    </div>
-                    <div className="text-sm text-gray-500">Platform administrator</div>
-                  </div>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--endevo-deep-space-tint-4)' }}>
-                    <span style={{ color: 'var(--endevo-deep-space)' }} className="text-xl">👑</span>
-                  </div>
-                </div>
-              </button>
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Email Input */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Enter your email"
+                />
+              </div>
 
-              {/* HR Admin */}
-              <button
-                onClick={() => handleQuickLogin('hr@techcorp.com')}
-                className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:bg-blue-50 transition-all group"
-                style={{ 
-                  borderColor: 'var(--endevo-deep-space-tint-4)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-open-seas)';
-                  e.currentTarget.style.backgroundColor = '#F0FDFC';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-deep-space-tint-4)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      HR Admin - TechCorp
-                    </div>
-                    <div className="text-sm text-gray-500">Organization administrator</div>
-                  </div>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--endevo-open-seas)', opacity: 0.2 }}>
-                    <span style={{ color: 'var(--endevo-open-seas)' }} className="text-xl">💼</span>
-                  </div>
-                </div>
-              </button>
+              {/* Password Input */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Enter your password"
+                />
+              </div>
 
-              {/* Employee */}
+              {/* Role Dropdown */}
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Role
+                </label>
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
+                >
+                  <option value="employee">Employee</option>
+                  <option value="hr_admin">HR Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+
+              {/* Login Button */}
               <button
-                onClick={() => handleQuickLogin('jane.doe@techcorp.com')}
-                className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:bg-blue-50 transition-all group"
-                style={{ 
-                  borderColor: 'var(--endevo-deep-space-tint-4)',
+                type="submit"
+                className="w-full py-3 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg"
+                style={{
+                  backgroundColor: 'var(--endevo-deep-space)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-guiding-light)';
-                  e.currentTarget.style.backgroundColor = '#FEFCE8';
+                  e.currentTarget.style.backgroundColor = 'var(--endevo-deep-space-tint-1)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--endevo-deep-space-tint-4)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.backgroundColor = 'var(--endevo-deep-space)';
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      Employee - Jane Doe
-                    </div>
-                    <div className="text-sm text-gray-500">TechCorp employee</div>
-                  </div>
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-green-600 text-xl">👤</span>
-                  </div>
-                </div>
+                Sign In
               </button>
-            </div>
+            </form>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500 text-center">
@@ -149,55 +146,30 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Brand Colors Info */}
-          <div className="mt-6 bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--endevo-deep-space)' }}>
-              🎨 ENDevo Brand Colors
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--endevo-deep-space)' }}></div>
-                <span className="text-gray-600">Deep Space</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--endevo-setting-sun)' }}></div>
-                <span className="text-gray-600">Setting Sun</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--endevo-open-seas)' }}></div>
-                <span className="text-gray-600">Open Seas</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--endevo-guiding-light)' }}></div>
-                <span className="text-gray-600">Guiding Light</span>
-              </div>
-            </div>
-          </div>
-
           {/* Available Demo Users */}
           <div className="mt-6 bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Access</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Demo Accounts</h3>
             <div className="space-y-2 text-xs text-gray-600">
-              {mockUsers.slice(0, 5).map(u => (
-                <div key={u.id} className="flex items-center justify-between">
-                  <span>{u.email}</span>
-                  <button
-                    onClick={() => switchUser(u.id)}
-                    className="px-3 py-1 rounded font-medium transition-colors"
-                    style={{ 
-                      color: 'var(--endevo-setting-sun)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--endevo-setting-sun-tint-2)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Login
-                  </button>
-                </div>
-              ))}
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">admin@endevo.com</span>
+                <span className="text-gray-400">Super Admin</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">hr@techcorp.com</span>
+                <span className="text-gray-400">HR Admin</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">jane.doe@techcorp.com</span>
+                <span className="text-gray-400">Employee</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">john.smith@techcorp.com</span>
+                <span className="text-gray-400">Employee</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">mike.johnson@techcorp.com</span>
+                <span className="text-gray-400">Employee</span>
+              </div>
             </div>
           </div>
         </div>

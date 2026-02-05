@@ -55,6 +55,7 @@ export interface LearningModule {
   estimatedTime: string;
   lessonsCount: number;
   competency: string;
+  isActive?: boolean;
 }
 
 export interface EmployeeProgress {
