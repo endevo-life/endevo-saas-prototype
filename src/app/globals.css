@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+:root {
+  /* ============================================
+     ENDevo Brand Colors - Default Theme
+     Can be overridden per organization
+     ============================================ */
+  
+  /* PRIMARY COLORS */
+  --endevo-deep-space: #08123A;
+  --endevo-setting-sun: #FF5D00;
+  
+  /* SECONDARY COLORS */
+  --endevo-open-seas: #58BBB6;
+  --endevo-guiding-light: #C9FB3F;
+  --endevo-pure-white: #FFFFFF;
+  --endevo-compassionate-grey: #D5D1C7;
+  
+  /* SETTING SUN VARIATIONS */
+  --endevo-setting-sun-tint-2: #FFBE99;
+  --endevo-setting-sun-tint-1: #FF7D33;
+  --endevo-setting-sun-shade-1: #401700;
+  --endevo-setting-sun-shade-2: #802F00;
+  
+  /* DEEP SPACE VARIATIONS */
+  --endevo-deep-space-tint-4: #CED0D8;
+  --endevo-deep-space-tint-3: #9CA0B0;
+  --endevo-deep-space-tint-2: #6B7189;
+  --endevo-deep-space-tint-1: #394161;
+  
+  /* ============================================
+     Semantic Color Mapping
+     These can be customized per organization
+     ============================================ */
+  
+  /* Primary Brand Colors */
+  --brand-primary: var(--endevo-deep-space);
+  --brand-primary-light: var(--endevo-deep-space-tint-1);
+  --brand-primary-lighter: var(--endevo-deep-space-tint-2);
+  --brand-primary-lightest: var(--endevo-deep-space-tint-4);
+  
+  /* Accent Colors */
+  --brand-accent: var(--endevo-setting-sun);
+  --brand-accent-light: var(--endevo-setting-sun-tint-1);
+  --brand-accent-lighter: var(--endevo-setting-sun-tint-2);
+  --brand-accent-dark: var(--endevo-setting-sun-shade-2);
+  --brand-accent-darker: var(--endevo-setting-sun-shade-1);
+  
+  /* Secondary Theme Colors */
+  --brand-secondary: var(--endevo-open-seas);
+  --brand-tertiary: var(--endevo-guiding-light);
+  
+  /* Neutral Colors */
+  --brand-grey: var(--endevo-compassionate-grey);
+  --brand-white: var(--endevo-pure-white);
+  
+  /* ============================================
+     UI Component Colors
+     ============================================ */
+  
+  /* Backgrounds */
+  --background: #F9FAFB;
+  --background-secondary: var(--brand-grey);
+  --background-dark: var(--brand-primary);
+  
+  /* Text */
+  --foreground: #111827;
+  --text-primary: var(--brand-primary);
+  --text-secondary: var(--endevo-deep-space-tint-2);
+  --text-muted: var(--endevo-deep-space-tint-3);
+  
+  /* Interactive Elements */
+  --button-primary: var(--brand-primary);
+  --button-primary-hover: var(--brand-primary-light);
+  --button-accent: var(--brand-accent);
+  --button-accent-hover: var(--brand-accent-light);
+  
+  /* Status Colors (System-wide) */
+  --color-success: #10B981;
+  --color-success-light: #ECFDF5;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FFFBEB;
+  --color-error: #EF4444;
+  --color-error-light: #FEF2F2;
+  --color-info: var(--brand-secondary);
+  --color-info-light: #F0FDFC;
+}
+
+/* ============================================
+   Organization-Specific Theme Overrides
+   Add data attributes to body for org theming
+   ============================================ */
+
+/* Example: TechCorp Custom Theme */
+body[data-org="techcorp"] {
+  --brand-primary: #1E40AF;
+  --brand-accent: #F97316;
+  --brand-secondary: #10B981;
+}
+
+/* Example: Innovate Labs Custom Theme */
+body[data-org="innovate"] {
+  --brand-primary: #7C3AED;
+  --brand-accent: #EC4899;
+  --brand-secondary: #06B6D4;
+}
+
+/* ============================================
+   Super Admin Theme (ENDevo Default)
+   ============================================ */
+body[data-role="super_admin"] {
+  --brand-primary: var(--endevo-deep-space);
+  --brand-accent: var(--endevo-setting-sun);
+  --brand-secondary: var(--endevo-open-seas);
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--endevo-deep-space-tint-3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--endevo-deep-space-tint-2);
+}
+
+/* ============================================
+   Utility Classes for Brand Colors
+   ============================================ */
+
+.bg-brand-primary { background-color: var(--brand-primary); }
+.bg-brand-accent { background-color: var(--brand-accent); }
+.bg-brand-secondary { background-color: var(--brand-secondary); }
+
+.text-brand-primary { color: var(--brand-primary); }
+.text-brand-accent { color: var(--brand-accent); }
+.text-brand-secondary { color: var(--brand-secondary); }
+
+.border-brand-primary { border-color: var(--brand-primary); }
+.border-brand-accent { border-color: var(--brand-accent); }
+.border-brand-secondary { border-color: var(--brand-secondary); }
+
