@@ -3,7 +3,7 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockModules, mockProgress, mockEmployees } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function EmployeeDashboard() {
@@ -12,6 +12,13 @@ export default function EmployeeDashboard() {
 
   // Get employee data
   const employee = mockEmployees.find(e => e.id === user?.id);
+
+  // Redirect to assessment if user hasn't completed it (first-time login)
+  useEffect(() => {
+    if (employee && !employee.assessmentScore) {
+      router.push('/employee/assessment');
+    }
+  }, [employee, router]);
   const employeeProgress = mockProgress.filter(p => p.employeeId === user?.id);
 
   // Calculate statistics
@@ -38,30 +45,32 @@ export default function EmployeeDashboard() {
 
   return (
     <DashboardLayout title="Employee Dashboard" role="employee">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-lg p-8 mb-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {user?.firstName}! 👋
-        </h1>
-        <p className="text-blue-100 mb-6">
-          Your legacy readiness journey - Taking control of what matters most
-        </p>
-        
-        {/* Progress Bar */}
-        <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold">Overall Progress</span>
-            <span className="font-bold">{overallProgress}%</span>
+      {/* Export PDF Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+        >
+          <span>📄</span>
+          <span>Export to PDF</span>
+        </button>
+      </div>
+
+      {/* Welcome Section - Minimal */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              Welcome back, {user?.firstName}! 👋
+            </h1>
+            <p className="text-gray-600 text-sm">
+              Your legacy readiness journey
+            </p>
           </div>
-          <div className="w-full bg-white/30 rounded-full h-3">
-            <div
-              className="bg-white h-3 rounded-full transition-all duration-500"
-              style={{ width: `${overallProgress}%` }}
-            ></div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-blue-600">{overallProgress}%</div>
+            <p className="text-xs text-gray-500">{completedModules} of {totalModules} complete</p>
           </div>
-          <p className="text-sm text-blue-100 mt-2">
-            {completedModules} of {totalModules} modules completed
-          </p>
         </div>
       </div>
 
@@ -244,21 +253,23 @@ export default function EmployeeDashboard() {
                 <span>View Full Progress</span>
               </button>
               
-              <button
-                onClick={() => router.push('/employee/certificates')}
-                className="w-full px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-left font-medium transition-colors flex items-center"
-              >
-                <span className="mr-3 text-xl">🏆</span>
-                <span>My Certificates</span>
-              </button>
-              
               {!employee?.assessmentScore && (
                 <button
                   onClick={() => router.push('/employee/assessment')}
-                  className="w-full px-4 py-3 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg text-left font-medium transition-colors flex items-center"
+                  className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-left font-medium transition-colors flex items-center shadow-md"
                 >
                   <span className="mr-3 text-xl">📝</span>
-                  <span>Take Assessment</span>
+                  <span>Start Initial Assessment</span>
+                </button>
+              )}
+              
+              {employee?.assessmentScore && overallProgress === 100 && (
+                <button
+                  onClick={() => alert('Certificate available upon completion of all modules')}
+                  className="w-full px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-left font-medium transition-colors flex items-center"
+                >
+                  <span className="mr-3 text-xl">🏆</span>
+                  <span>View Certificate</span>
                 </button>
               )}
             </div>

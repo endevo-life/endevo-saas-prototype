@@ -32,10 +32,16 @@ export default function Home() {
     // Auto-fill email and password based on role
     if (selectedRole === 'super_admin') {
       setEmail('admin@endevo.com');
-      setPassword('admin123');
+      setPassword('demo123');
     } else if (selectedRole === 'hr_admin') {
       setEmail('hr@techcorp.com');
-      setPassword('hr123');
+      setPassword('demo123');
+    } else if (selectedRole === 'employee_zero') {
+      setEmail('new.employee@techcorp.com');
+      setPassword('demo123');
+    } else if (selectedRole === 'employee_progress') {
+      setEmail('bob.wilson@techcorp.com');
+      setPassword('demo123');
     } else {
       setEmail('jane.doe@techcorp.com');
       setPassword('demo123');
@@ -107,7 +113,7 @@ export default function Home() {
               {/* Role Dropdown */}
               <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Role
+                  Select Demo Account
                 </label>
                 <select
                   id="role"
@@ -115,9 +121,15 @@ export default function Home() {
                   onChange={(e) => handleRoleChange(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
                 >
-                  <option value="employee">Employee</option>
-                  <option value="hr_admin">HR Admin</option>
-                  <option value="super_admin">Super Admin</option>
+                  <optgroup label="Employees">
+                    <option value="employee">Jane Doe - 75% Complete</option>
+                    <option value="employee_progress">Bob Wilson - 45% Complete</option>
+                    <option value="employee_zero">Alex Johnson - New User (0%)</option>
+                  </optgroup>
+                  <optgroup label="Admin Roles">
+                    <option value="hr_admin">HR Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -148,27 +160,31 @@ export default function Home() {
 
           {/* Available Demo Users */}
           <div className="mt-6 bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Demo Accounts</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Demo Accounts</h3>
             <div className="space-y-2 text-xs text-gray-600">
               <div className="flex items-center justify-between py-1">
-                <span className="font-medium">admin@endevo.com</span>
-                <span className="text-gray-400">Super Admin</span>
+                <span className="font-medium">new.employee@techcorp.com</span>
+                <span className="text-green-600 font-medium">New User (0%)</span>
               </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">bob.wilson@techcorp.com</span>
+                <span className="text-blue-600 font-medium">Some Progress (45%)</span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="font-medium">jane.doe@techcorp.com</span>
+                <span className="text-purple-600 font-medium">Advanced (75%)</span>
+              </div>
+              <div className="border-t border-gray-200 my-2"></div>
               <div className="flex items-center justify-between py-1">
                 <span className="font-medium">hr@techcorp.com</span>
                 <span className="text-gray-400">HR Admin</span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="font-medium">jane.doe@techcorp.com</span>
-                <span className="text-gray-400">Employee</span>
+                <span className="font-medium">admin@endevo.com</span>
+                <span className="text-gray-400">Super Admin</span>
               </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="font-medium">john.smith@techcorp.com</span>
-                <span className="text-gray-400">Employee</span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="font-medium">mike.johnson@techcorp.com</span>
-                <span className="text-gray-400">Employee</span>
+              <div className="mt-3 pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500 italic">Password for all: demo123</p>
               </div>
             </div>
           </div>

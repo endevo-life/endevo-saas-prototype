@@ -110,6 +110,14 @@ export const mockUsers: User[] = [
     role: 'employee',
     organizationId: 'org-1',
   },
+  {
+    id: 'emp-4',
+    email: 'new.employee@techcorp.com',
+    firstName: 'Alex',
+    lastName: 'Johnson',
+    role: 'employee',
+    organizationId: 'org-1',
+  },
 ];
 
 // Mock Organizations
@@ -195,6 +203,22 @@ export const mockEmployees: Employee[] = [
     department: 'Sales',
     jobTitle: 'Sales Representative',
     hireDate: '2025-01-10',
+  },
+  {
+    id: 'emp-4',
+    organizationId: 'org-1',
+    email: 'new.employee@techcorp.com',
+    firstName: 'Alex',
+    lastName: 'Johnson',
+    role: 'employee',
+    status: 'active',
+    onboardedAt: '2026-02-06T08:00:00Z',
+    lastLoginAt: null, // First time login
+    progressPercentage: 0,
+    assessmentScore: null, // Hasn't taken assessment yet
+    department: 'Operations',
+    jobTitle: 'Operations Coordinator',
+    hireDate: '2026-02-01',
   },
 ];
 
@@ -327,5 +351,36 @@ export const mockProgress: EmployeeProgress[] = [
     lastAccessedAt: '2026-02-03T15:30:00Z',
     completedModules: ['module-1', 'module-2', 'module-3'],
     currentModules: ['module-4'],
+  },
+  // Bob Wilson's Progress (emp-2) - 45% complete
+  {
+    employeeId: 'emp-2',
+    moduleId: 'module-1',
+    status: 'completed',
+    progressPercentage: 100,
+    completedAt: '2025-12-14T11:00:00Z',
+    lastAccessedAt: '2025-12-14T11:00:00Z',
+    completedModules: ['module-1'],
+    currentModules: [],
+  },
+  {
+    employeeId: 'emp-2',
+    moduleId: 'module-2',
+    status: 'completed',
+    progressPercentage: 100,
+    completedAt: '2025-12-20T15:45:00Z',
+    lastAccessedAt: '2025-12-20T15:45:00Z',
+    completedModules: ['module-1', 'module-2'],
+    currentModules: [],
+  },
+  {
+    employeeId: 'emp-2',
+    moduleId: 'module-3',
+    status: 'in_progress',
+    progressPercentage: 40,
+    completedAt: null,
+    lastAccessedAt: '2026-02-02T09:20:00Z',
+    completedModules: ['module-1', 'module-2'],
+    currentModules: ['module-3'],
   },
 ];

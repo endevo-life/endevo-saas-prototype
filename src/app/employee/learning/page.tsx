@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockModules, mockProgress } from '@/lib/mock-data';
+import { mockModules, mockProgress, mockEmployees } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,7 @@ export default function EmployeeLearningPage() {
 
   if (!user) return null;
 
+  const employee = mockEmployees.find(e => e.id === user.id);
   const userProgress = mockProgress.find(p => p.employeeId === user.id);
   const enrolledModuleIds = userProgress?.completedModules || [];
   const inProgressModuleIds = userProgress?.currentModules || [];
@@ -23,6 +24,42 @@ export default function EmployeeLearningPage() {
   return (
     <DashboardLayout title="My Learning" role="employee">
       <div className="space-y-6">
+        {/* Initial Assessment Section */}
+        {!employee?.assessmentScore ? (
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-6 shadow-lg text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2">📝 Start Your Journey</h2>
+                <p className="text-white/90 mb-4">
+                  Complete your initial assessment to get personalized learning modules with videos and resources.
+                </p>
+                <button
+                  onClick={() => router.push('/employee/assessment')}
+                  className="px-6 py-3 bg-white text-orange-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                >
+                  Take Initial Assessment →
+                </button>
+              </div>
+              <div className="text-6xl ml-6">🎯</div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 shadow-lg text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-xl font-bold mb-2">✅ Assessment Completed</h2>
+                <p className="text-white/90">
+                  Your personalized learning path has been created based on your assessment results.
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold">{employee.assessmentScore}/10</div>
+                <p className="text-sm text-white/80">Your Score</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">

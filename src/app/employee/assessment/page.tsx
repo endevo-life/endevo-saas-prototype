@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import Button from '@/components/common/Button';
 import RadioOption from '@/components/common/RadioOption';
 import ProgressBar from '@/components/common/ProgressBar';
 import PrivacyNote from '@/components/common/PrivacyNote';
 import { assessmentQuestions, calculateAssessmentScore, assignModulesFromScore } from '@/lib/assessment-data';
+import { mockModules } from '@/lib/mock-data';
 
 export default function AssessmentPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
@@ -19,6 +23,83 @@ export default function AssessmentPage() {
   const totalQuestions = assessmentQuestions.length;
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
   const currentAnswer = answers[currentQuestion.id];
+
+  // Welcome screen before starting assessment
+  if (showWelcome) {
+    return (
+      <DashboardLayout title="Welcome" role="employee">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-6 text-white">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">👋</div>
+              <h1 className="text-3xl font-bold mb-2">Welcome to ENDevo!</h1>
+              <p className="text-blue-100">Your Legacy Readiness Journey Starts Here</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Let's Get Started</h2>
+            <p className="text-gray-600 mb-6">
+              We'll begin with a quick {totalQuestions}-question assessment to understand your current legacy readiness.
+              Based on your answers, we'll create a personalized learning path with videos and resources
+              tailored specifically for you.
+            </p>
+
+            <div className="bg-blue-50 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-3">What to Expect:</h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="text-blue-600 text-xl">📝</span>
+                  <div>
+                    <strong className="text-gray-900">Step 1: Assessment</strong>
+                    <p className="text-gray-600 text-sm">Answer {totalQuestions} simple questions about your legacy planning</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-green-600 text-xl">🎯</span>
+                  <div>
+                    <strong className="text-gray-900">Step 2: Personalized Path</strong>
+                    <p className="text-gray-600 text-sm">Get customized learning modules with videos and documents</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-purple-600 text-xl">📚</span>
+                  <div>
+                    <strong className="text-gray-900">Step 3: Learn at Your Pace</strong>
+                    <p className="text-gray-600 text-sm">Complete modules with videos, readings, and actionable steps</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-600 text-xl">🏆</span>
+                  <div>
+                    <strong className="text-gray-900">Step 4: Earn Certificate</strong>
+                    <p className="text-gray-600 text-sm">Complete all modules to receive your certificate</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <PrivacyNote>
+              <p>
+                <strong>Your privacy is protected.</strong> Your answers and progress are completely private.
+                Only you can see your responses. HR admins only see completion status.
+              </p>
+            </PrivacyNote>
+
+            <div className="mt-8 flex gap-4">
+              <Button 
+                variant="primary" 
+                fullWidth 
+                onClick={() => setShowWelcome(false)}
+              >
+                Start Assessment →
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handleAnswerChange = (value: string) => {
     setAnswers({
@@ -48,9 +129,20 @@ export default function AssessmentPage() {
     const score = calculateAssessmentScore(answers);
     const assignedModules = assignModulesFromScore(score, answers);
     
-    // In a real app, save to backend
-    console.log('Assessment Score:', score);
-    console.log('Assigned Modules:', assignedModules);
+    // Save to localStorage to simulate backend (in real app, save to backend)
+    if (user) {
+      const assessmentData = {
+        userId: user.id,
+        score: score,
+        assignedModules: assignedModules,
+        completedAt: new Date().toISOString(),
+        answers: answers
+      };
+      localStorage.setItem(`assessment_${user.id}`, JSON.stringify(assessmentData));
+      
+      console.log('Assessment Score:', score);
+      console.log('Assigned Modules:', assignedModules);
+    }
     
     // Redirect to dashboard
     router.push('/employee/dashboard');
@@ -86,26 +178,34 @@ export default function AssessmentPage() {
             <div className="mb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Your Personalized Learning Path</h2>
               <p className="text-gray-600 mb-4">
-                Based on your answers, we've created a customized learning path with {assignedModules.length} modules
-                to help you improve your legacy readiness.
+                Based on your answers, we've created a customized learning path with {assignedModules.length} modules.
+                Each module includes videos, readings, and actionable steps.
               </p>
 
               <div className="space-y-3">
-                {assignedModules.map((moduleId, index) => (
-                  <div key={moduleId} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold mr-4">
-                      {index + 1}
+                {assignedModules.map((moduleId, index) => {
+                  const module = mockModules.find(m => m.id === moduleId);
+                  return (
+                    <div key={moduleId} className="flex items-start p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
+                      <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-4">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-gray-900 mb-1">{module?.title || `Module ${moduleId.replace('module-', '')}`}</p>
+                        <p className="text-sm text-gray-600">{module?.description}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>🎥 Videos & Reading</span>
+                          <span>⏱️ {module?.estimatedTime}</span>
+                        </div>
+                      </div>
+                      <div className="ml-auto">
+                        <span className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
+                          ✓ Assigned
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">Module {moduleId.replace('module-', '')}</p>
-                    </div>
-                    <div className="ml-auto">
-                      <span className="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
-                        Assigned
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

@@ -172,6 +172,17 @@ export default function ModuleDetailPage({ params }: PageProps) {
   return (
     <DashboardLayout title={module.title} role="employee">
       <div className="max-w-5xl mx-auto">
+        {/* Export PDF Button */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <span>📄</span>
+            <span>Export to PDF</span>
+          </button>
+        </div>
+
         {/* Module Header */}
         <div className="mb-6">
           <nav className="flex items-center text-sm text-gray-600 mb-4">
@@ -358,11 +369,13 @@ export default function ModuleDetailPage({ params }: PageProps) {
             <Card padding="sm">
               <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
               <div className="space-y-2">
-                <Button variant="outline" size="sm" fullWidth>
-                  📥 Download Materials
-                </Button>
-                <Button variant="outline" size="sm" fullWidth>
-                  📝 Export Notes
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  fullWidth
+                  onClick={() => window.print()}
+                >
+                  📄 Export to PDF
                 </Button>
                 <Button 
                   variant="outline" 
