@@ -1,13 +1,41 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Italiana, Jura, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ToastProvider } from "@/components/common/Toast";
 
-const inter = Inter({ subsets: ["latin"] });
+const italiana = Italiana({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-italiana",
+  display: "swap",
+});
+
+const jura = Jura({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-jura",
+  display: "swap",
+});
+
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "ENDevo - Employee Legacy Readiness Platform",
-  description: "B2B SaaS platform for employee legacy readiness education",
+  title: "Legacy Readiness OS — Powered by Endevo",
+  description:
+    "Legacy Readiness OS — the platform for modern, dignified life-readiness across Legal, Financial, Digital, and Physical domains.",
   icons: {
     icon: "/asset/favicon-logo.png",
     shortcut: "/asset/favicon-logo.png",
@@ -21,10 +49,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html
+      lang="en"
+      className={`${italiana.variable} ${jura.variable} ${instrumentSans.variable} ${jetBrainsMono.variable}`}
+    >
+      <body>
         <AuthProvider>
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,161 +1,293 @@
 @import "tailwindcss";
 
+/* ============================================
+   LEGACY READINESS OS — Eternal Geometry
+   Brand tokens (v3.0)
+   ============================================ */
+
 :root {
+  /* PRIMARY BLUES */
+  --lr-midnight: #12162A;
+  --lr-navy-deep: #1C2644;
+  --lr-navy-mid: #2A3A62;
+  --lr-steel: #485880;
+
+  /* CHAMPAGNE GOLDS */
+  --lr-gold: #D4BE94;
+  --lr-gold-soft: #C3AC80;
+  --lr-gold-pale: #E4D7B9;
+
+  /* NEUTRALS */
+  --lr-charcoal: #232026;
+  --lr-warm-slate: #5F5A64;
+  --lr-lavender-dust: #B4AFC3;
+  --lr-pearl: #EBE8E1;
+  --lr-ivory: #FCFAF5;
+
   /* ============================================
-     ENDevo Brand Colors - Default Theme
-     Can be overridden per organization
+     Semantic mapping (used across UI)
      ============================================ */
-  
-  /* PRIMARY COLORS */
-  --endevo-deep-space: #08123A;
-  --endevo-setting-sun: #FF5D00;
-  
-  /* SECONDARY COLORS */
-  --endevo-open-seas: #58BBB6;
-  --endevo-guiding-light: #C9FB3F;
-  --endevo-pure-white: #FFFFFF;
-  --endevo-compassionate-grey: #D5D1C7;
-  
-  /* SETTING SUN VARIATIONS */
-  --endevo-setting-sun-tint-2: #FFBE99;
-  --endevo-setting-sun-tint-1: #FF7D33;
-  --endevo-setting-sun-shade-1: #401700;
-  --endevo-setting-sun-shade-2: #802F00;
-  
-  /* DEEP SPACE VARIATIONS */
-  --endevo-deep-space-tint-4: #CED0D8;
-  --endevo-deep-space-tint-3: #9CA0B0;
-  --endevo-deep-space-tint-2: #6B7189;
-  --endevo-deep-space-tint-1: #394161;
-  
-  /* ============================================
-     Semantic Color Mapping
-     These can be customized per organization
-     ============================================ */
-  
-  /* Primary Brand Colors */
-  --brand-primary: var(--endevo-deep-space);
-  --brand-primary-light: var(--endevo-deep-space-tint-1);
-  --brand-primary-lighter: var(--endevo-deep-space-tint-2);
-  --brand-primary-lightest: var(--endevo-deep-space-tint-4);
-  
-  /* Accent Colors */
-  --brand-accent: var(--endevo-setting-sun);
-  --brand-accent-light: var(--endevo-setting-sun-tint-1);
-  --brand-accent-lighter: var(--endevo-setting-sun-tint-2);
-  --brand-accent-dark: var(--endevo-setting-sun-shade-2);
-  --brand-accent-darker: var(--endevo-setting-sun-shade-1);
-  
-  /* Secondary Theme Colors */
-  --brand-secondary: var(--endevo-open-seas);
-  --brand-tertiary: var(--endevo-guiding-light);
-  
-  /* Neutral Colors */
-  --brand-grey: var(--endevo-compassionate-grey);
-  --brand-white: var(--endevo-pure-white);
-  
-  /* ============================================
-     UI Component Colors
-     ============================================ */
-  
-  /* Backgrounds */
-  --background: #F9FAFB;
-  --background-secondary: var(--brand-grey);
-  --background-dark: var(--brand-primary);
-  
-  /* Text */
-  --foreground: #111827;
-  --text-primary: var(--brand-primary);
-  --text-secondary: var(--endevo-deep-space-tint-2);
-  --text-muted: var(--endevo-deep-space-tint-3);
-  
-  /* Interactive Elements */
-  --button-primary: var(--brand-primary);
-  --button-primary-hover: var(--brand-primary-light);
-  --button-accent: var(--brand-accent);
-  --button-accent-hover: var(--brand-accent-light);
-  
-  /* Status Colors (System-wide) */
-  --color-success: #10B981;
-  --color-success-light: #ECFDF5;
-  --color-warning: #F59E0B;
-  --color-warning-light: #FFFBEB;
-  --color-error: #EF4444;
-  --color-error-light: #FEF2F2;
-  --color-info: var(--brand-secondary);
-  --color-info-light: #F0FDFC;
+  --brand-primary: var(--lr-navy-deep);
+  --brand-primary-deep: var(--lr-midnight);
+  --brand-primary-mid: var(--lr-navy-mid);
+  --brand-primary-light: var(--lr-steel);
+
+  --brand-accent: var(--lr-gold);
+  --brand-accent-soft: var(--lr-gold-soft);
+  --brand-accent-pale: var(--lr-gold-pale);
+
+  --brand-ivory: var(--lr-ivory);
+  --brand-pearl: var(--lr-pearl);
+  --brand-slate: var(--lr-warm-slate);
+
+  /* App surfaces — DARK by default (Eternal Geometry signature) */
+  --background: var(--lr-midnight);
+  --background-secondary: var(--lr-navy-deep);
+  --background-light: var(--lr-ivory);
+  --surface: var(--lr-navy-deep);
+  --surface-elevated: #243056;
+  --surface-light: #FFFFFF;
+
+  /* Text on dark surfaces */
+  --foreground: var(--lr-pearl);
+  --text-primary: var(--lr-gold);
+  --text-secondary: var(--lr-pearl);
+  --text-muted: var(--lr-lavender-dust);
+  --text-on-light: var(--lr-navy-deep);
+
+  /* Borders */
+  --border-subtle: rgba(212, 190, 148, 0.14);
+  --border-gold: rgba(212, 190, 148, 0.45);
+  --border-light: rgba(28, 38, 68, 0.08);
+
+  /* Status (kept neutral so it doesn't fight the palette) */
+  --color-success: #5C8A6F;
+  --color-warning: var(--lr-gold-soft);
+  --color-error: #A65454;
+  --color-info: var(--lr-steel);
+
+  /* Type families — fed by next/font in layout.tsx */
+  --font-display: var(--font-italiana), 'Cormorant Garamond', Georgia, serif;
+  --font-label: var(--font-jura), 'Inter', system-ui, sans-serif;
+  --font-body: var(--font-instrument), 'Inter', system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Light surface helper — opt-in for screens that need ivory */
+body[data-surface="light"] {
+  --background: var(--lr-ivory);
+  --foreground: var(--lr-charcoal);
+  --surface: #FFFFFF;
+  --text-primary: var(--lr-navy-deep);
+  --text-secondary: var(--lr-warm-slate);
+  --border-subtle: rgba(28, 38, 68, 0.08);
 }
 
 /* ============================================
-   Organization-Specific Theme Overrides
-   Add data attributes to body for org theming
+   Base
    ============================================ */
 
-/* Example: TechCorp Custom Theme */
-body[data-org="techcorp"] {
-  --brand-primary: #1E40AF;
-  --brand-accent: #F97316;
-  --brand-secondary: #10B981;
-}
-
-/* Example: Innovate Labs Custom Theme */
-body[data-org="innovate"] {
-  --brand-primary: #7C3AED;
-  --brand-accent: #EC4899;
-  --brand-secondary: #06B6D4;
-}
-
-/* ============================================
-   Super Admin Theme (ENDevo Default)
-   ============================================ */
-body[data-role="super_admin"] {
-  --brand-primary: var(--endevo-deep-space);
-  --brand-accent: var(--endevo-setting-sun);
-  --brand-secondary: var(--endevo-open-seas);
-}
-
-/* ============================================
-   Base Styles
-   ============================================ */
-
-body {
+html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+h1, h2, h3, h4 {
+  font-family: var(--font-label);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
+.font-display { font-family: var(--font-display); letter-spacing: 0.06em; }
+.font-label   { font-family: var(--font-label); letter-spacing: 0.04em; }
+.font-body    { font-family: var(--font-body); }
+.font-mono    { font-family: var(--font-mono); }
 
+/* Scrollbar — dark theme aware */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--lr-navy-deep); }
 ::-webkit-scrollbar-thumb {
-  background: var(--endevo-deep-space-tint-3);
+  background: var(--lr-steel);
   border-radius: 4px;
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--endevo-deep-space-tint-2);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--lr-gold-soft); }
 
 /* ============================================
-   Utility Classes for Brand Colors
+   Brand utility classes
    ============================================ */
 
-.bg-brand-primary { background-color: var(--brand-primary); }
-.bg-brand-accent { background-color: var(--brand-accent); }
-.bg-brand-secondary { background-color: var(--brand-secondary); }
+.bg-brand-primary  { background-color: var(--brand-primary); }
+.bg-brand-midnight { background-color: var(--lr-midnight); }
+.bg-brand-accent   { background-color: var(--brand-accent); }
+.bg-brand-ivory    { background-color: var(--lr-ivory); }
+.bg-brand-pearl    { background-color: var(--lr-pearl); }
 
 .text-brand-primary { color: var(--brand-primary); }
-.text-brand-accent { color: var(--brand-accent); }
-.text-brand-secondary { color: var(--brand-secondary); }
+.text-brand-accent  { color: var(--brand-accent); }
+.text-brand-ivory   { color: var(--lr-ivory); }
+.text-brand-pearl   { color: var(--lr-pearl); }
+.text-brand-slate   { color: var(--lr-warm-slate); }
 
 .border-brand-primary { border-color: var(--brand-primary); }
-.border-brand-accent { border-color: var(--brand-accent); }
-.border-brand-secondary { border-color: var(--brand-secondary); }
+.border-brand-accent  { border-color: var(--brand-accent); }
+.border-gold-soft     { border-color: var(--border-gold); }
 
+/* Tapered separator (gold horizontal divider that fades at edges) */
+.lr-separator {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--lr-gold) 50%,
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+/* Caps-tracked label — for "01 LEGAL · 02 FINANCIAL" style copy */
+.lr-eyebrow {
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lr-steel);
+}
+
+/* Display heading — Italiana, used for hero / brand name */
+.lr-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--brand-primary);
+}
+
+/* Score / data style */
+.lr-score {
+  font-family: var(--font-mono);
+  color: var(--brand-accent);
+  letter-spacing: 0.04em;
+}
+
+/* Surface card — DARK by default. Navy-Deep face, soft gold edge. */
+.lr-card {
+  background: linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  color: var(--lr-pearl);
+  box-shadow:
+    0 1px 0 rgba(212, 190, 148, 0.04),
+    0 22px 50px -28px rgba(0, 0, 0, 0.55);
+}
+
+/* Slightly lighter elevated dark card */
+.lr-card-elevated {
+  background: linear-gradient(180deg, #2C3866 0%, var(--lr-navy-deep) 100%);
+  border: 1px solid rgba(212, 190, 148, 0.22);
+  border-radius: 14px;
+  color: var(--lr-pearl);
+}
+
+/* Opt-in light card (for printed reports, ivory sections) */
+.lr-card-light {
+  background: #FFFFFF;
+  border: 1px solid rgba(28, 38, 68, 0.08);
+  border-radius: 14px;
+  color: var(--lr-charcoal);
+  box-shadow:
+    0 1px 0 rgba(28, 38, 68, 0.04),
+    0 18px 40px -28px rgba(28, 38, 68, 0.18);
+}
+
+/* Primary button — Gold on Navy (signature dark-mode action) */
+.lr-btn-primary {
+  background: var(--lr-gold);
+  color: var(--lr-navy-deep);
+  border: 1px solid var(--lr-gold);
+  border-radius: 10px;
+  padding: 0.7rem 1.25rem;
+  font-family: var(--font-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+.lr-btn-primary:hover {
+  background: var(--lr-gold-pale);
+  box-shadow: 0 8px 24px -10px rgba(212, 190, 148, 0.5);
+}
+
+/* Gold ghost button — for dark surfaces */
+.lr-btn-gold {
+  background: transparent;
+  color: var(--lr-gold);
+  border: 1px solid var(--lr-gold);
+  border-radius: 10px;
+  padding: 0.7rem 1.25rem;
+  font-family: var(--font-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+.lr-btn-gold:hover {
+  background: var(--lr-gold);
+  color: var(--lr-navy-deep);
+}
+
+/* Outline button on light surface */
+.lr-btn-outline {
+  background: transparent;
+  color: var(--lr-navy-deep);
+  border: 1px solid var(--lr-navy-deep);
+  border-radius: 10px;
+  padding: 0.65rem 1.15rem;
+  font-family: var(--font-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  transition: all 0.2s ease;
+}
+.lr-btn-outline:hover {
+  background: var(--lr-navy-deep);
+  color: var(--lr-ivory);
+}
+
+/* Concentric ring badge — pure CSS implementation of the brand motif */
+.lr-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--lr-ivory);
+  border: 1px solid var(--lr-gold);
+}
+.lr-ring::before,
+.lr-ring::after {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border-radius: 9999px;
+  border: 1px solid var(--lr-gold);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.lr-ring::after {
+  inset: 14%;
+  opacity: 0.3;
+}
+
+/* Print-friendly */
+@media print {
+  body { background: #FFFFFF; }
+  .lr-card { box-shadow: none; border-color: #d8d8d8; }
+}

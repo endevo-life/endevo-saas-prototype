@@ -3,9 +3,9 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, ReactNode, useState } from 'react';
-import Image from 'next/image';
 import { mockOrganizations } from '@/lib/mock-data';
 import ChatWidget from '@/components/ChatWidget';
+import LRMonogram from '@/components/common/LRMonogram';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -24,53 +24,46 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
     if (!user) {
       router.push('/');
     } else if (user.role !== role) {
-      // Redirect to appropriate dashboard
-      if (user.role === 'super_admin') {
-        router.push('/admin/dashboard');
-      } else if (user.role === 'hr_admin') {
-        router.push('/hr/dashboard');
-      } else if (user.role === 'employee') {
-        router.push('/employee/dashboard');
-      }
+      if (user.role === 'super_admin') router.push('/admin/dashboard');
+      else if (user.role === 'hr_admin') router.push('/hr/dashboard');
+      else if (user.role === 'employee') router.push('/employee/dashboard');
     }
   }, [user, role, router]);
 
-  if (!user || user.role !== role) {
-    return null;
-  }
+  if (!user || user.role !== role) return null;
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
-  // Navigation items based on role
   const getNavigationItems = () => {
     switch (role) {
       case 'super_admin':
         return [
-          { label: 'Dashboard', path: '/admin/dashboard', icon: '📊' },
-          { label: 'Organizations', path: '/admin/organizations', icon: '🏢' },
-          { label: 'Users', path: '/admin/users', icon: '👥' },
-          { label: 'Analytics', path: '/admin/analytics', icon: '📈' },
-          { label: 'Settings', path: '/admin/settings', icon: '⚙️' },
+          { label: 'Dashboard', path: '/admin/dashboard' },
+          { label: 'Organizations', path: '/admin/organizations' },
+          { label: 'Users', path: '/admin/users' },
+          { label: 'Analytics', path: '/admin/analytics' },
+          { label: 'Settings', path: '/admin/settings' },
         ];
       case 'hr_admin':
         return [
-          { label: 'Dashboard', path: '/hr/dashboard', icon: '📊' },
-          { label: 'Employees', path: '/hr/employees', icon: '👥' },
-          { label: 'Analytics', path: '/hr/analytics', icon: '📈' },
-          { label: 'Progress Reports', path: '/hr/reports', icon: '📋' },
-          { label: 'Modules', path: '/hr/modules', icon: '📚' },
-          { label: 'Settings', path: '/hr/settings', icon: '⚙️' },
+          { label: 'Dashboard', path: '/hr/dashboard' },
+          { label: 'Members', path: '/hr/employees' },
+          { label: 'Analytics', path: '/hr/analytics' },
+          { label: 'Reports', path: '/hr/reports' },
+          { label: 'Modules', path: '/hr/modules' },
+          { label: 'Settings', path: '/hr/settings' },
         ];
       case 'employee':
         return [
-          { label: 'Dashboard', path: '/employee/dashboard', icon: '🏠' },
-          { label: 'Progress Summary', path: '/employee/progress', icon: '📊' },
-          { label: 'My Learning', path: '/employee/learning', icon: '📚' },
-          { label: 'Certificates', path: '/employee/certificates', icon: '🏆' },
-          { label: 'Profile', path: '/employee/profile', icon: '👤' },
+          { label: 'Today', path: '/employee/dashboard' },
+          { label: 'The Path', path: '/employee/path' },
+          { label: 'Progress', path: '/employee/progress' },
+          { label: 'My Learning', path: '/employee/learning' },
+          { label: 'Final Playbook', path: '/employee/certificates' },
+          { label: 'Profile', path: '/employee/profile' },
         ];
       default:
         return [];
@@ -80,90 +73,103 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
   const navItems = getNavigationItems();
   const isActivePath = (path: string) => pathname === path;
 
-  // Get organization name
-  const organization = user.organizationId 
-    ? mockOrganizations.find(org => org.id === user.organizationId)
+  const organization = user.organizationId
+    ? mockOrganizations.find((org) => org.id === user.organizationId)
     : null;
 
+  const roleLabel =
+    role === 'super_admin' ? 'Super Admin' : role === 'hr_admin' ? 'HR Admin' : 'Member';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-(--lr-midnight) text-(--lr-pearl)">
       {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm border-b border-gray-200 z-30">
-        <div className="h-full px-4 flex justify-between items-center">
-          {/* Left: Menu Toggle & Logo */}
+      <nav
+        className="fixed top-0 left-0 right-0 h-16 z-30 border-b border-(--border-subtle)"
+        style={{ background: 'var(--lr-midnight)' }}
+      >
+        <div className="h-full px-5 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors"
               aria-label="Toggle sidebar"
             >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="w-5 h-5 text-(--lr-gold)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            
+
             <div className="flex items-center space-x-3">
-              <Image 
-                src="/asset/logo-complete-xlarge.png" 
-                alt="ENDevo Logo" 
-                width={140} 
-                height={48}
-                className="h-10 w-auto"
-                priority
-              />
+              <LRMonogram size={36} />
+              <div className="hidden sm:flex flex-col leading-tight">
+                <span className="font-(family-name:--font-italiana) text-(--lr-gold) text-base tracking-[0.14em]">
+                  LEGACY READINESS OS
+                </span>
+                <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust)">
+                  Powered by Endevo
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Right: User Menu */}
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <div className="flex items-center space-x-3">
+            <button className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors relative">
+              <svg className="w-5 h-5 text-(--lr-pearl)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-(--lr-gold) rounded-full" />
             </button>
 
-            {/* User Profile */}
-            <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
+            <div className="flex items-center space-x-3 pl-4 border-l border-(--border-subtle)">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-(--lr-pearl)">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-gray-500">{organization?.name || 'ENDevo Platform'}</p>
+                <p className="text-[0.65rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) font-(family-name:--font-jura)">
+                  {organization?.name ?? 'Endevo Platform'}
+                </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                {user.firstName[0]}{user.lastName[0]}
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center font-(family-name:--font-jura) text-sm tracking-wider"
+                style={{
+                  background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-navy-deep) 100%)',
+                  color: 'var(--lr-gold)',
+                  border: '1px solid var(--lr-gold)',
+                }}
+              >
+                {user.firstName[0]}
+                {user.lastName[0]}
               </div>
             </div>
 
-            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-3 py-2 text-xs font-(family-name:--font-jura) tracking-[0.1em] uppercase text-(--lr-lavender-dust) hover:text-(--lr-gold) hover:bg-(--surface-elevated) rounded-lg transition-colors"
             >
-              Logout
+              Sign out
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Left Sidebar */}
+      {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-20 ${
+        className={`fixed top-16 left-0 bottom-0 transition-all duration-300 z-20 border-r border-(--border-subtle) ${
           sidebarOpen ? 'w-64' : 'w-0'
         }`}
+        style={{ background: 'var(--lr-navy-deep)' }}
       >
-        <div className={`h-full overflow-y-auto ${sidebarOpen ? 'p-4' : 'hidden'}`}>
-          {/* Role Badge */}
-          <div className="mb-6 p-3 rounded-lg" style={{ backgroundColor: 'var(--brand-primary-tint-4)' }}>
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Current Role</p>
-            <p className="text-sm font-bold" style={{ color: 'var(--brand-primary)' }}>
-              {role === 'super_admin' ? 'Super Admin' : role === 'hr_admin' ? 'HR Admin' : 'Employee'}
+        <div className={`h-full overflow-y-auto ${sidebarOpen ? 'p-5' : 'hidden'}`}>
+          <div className="mb-6">
+            <p className="lr-eyebrow mb-1.5" style={{ color: 'var(--lr-gold-soft)' }}>
+              Current Role
             </p>
+            <p className="font-(family-name:--font-italiana) text-xl tracking-[0.06em] text-(--lr-gold)">
+              {roleLabel}
+            </p>
+            <hr className="lr-separator mt-4" />
           </div>
 
-          {/* Navigation Items */}
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = isActivePath(item.path);
@@ -171,74 +177,56 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                 <button
                   key={item.path}
                   onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-(family-name:--font-jura) tracking-[0.08em] uppercase transition-all ${
                     isActive
-                      ? 'text-white shadow-md'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-(--lr-gold) text-(--lr-navy-deep)'
+                      : 'text-(--lr-pearl) hover:bg-(--surface-elevated)'
                   }`}
-                  style={isActive ? {
-                    backgroundColor: 'var(--brand-primary)',
-                  } : {}}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
+                  {item.label}
                 </button>
               );
             })}
           </nav>
 
-          {/* Help Section */}
-          <div className="mt-8 p-4 rounded-lg bg-gray-50 border border-gray-200">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Need Help?</p>
-            <div className="space-y-2">
-              <button 
-                onClick={() => window.open('/docs', '_blank')}
-                className="w-full flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <span>📚</span>
-                <span>Read Documentation</span>
-              </button>
-              <button 
-                onClick={() => setChatOpen(true)}
-                className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white transition-all hover:shadow-md"
-                style={{ 
-                  background: 'linear-gradient(135deg, var(--endevo-open-seas) 0%, var(--endevo-deep-space) 100%)'
-                }}
-              >
-                <Image 
-                  src="/asset/jesse-image.png" 
-                  alt="Jesse AI" 
-                  width={28} 
-                  height={28}
-                  className="w-7 h-7 rounded-full object-cover border-2 border-white"
-                />
-                <span>Ask Jesse (AI)</span>
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-              Get guidance on navigation, terms, and best practices
+          <hr className="lr-separator my-6" />
+
+          <div className="space-y-2">
+            <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+              Need guidance?
             </p>
+            <button
+              onClick={() => setChatOpen(true)}
+              className="w-full text-left px-4 py-3 rounded-lg text-xs font-(family-name:--font-jura) tracking-[0.1em] uppercase transition-all"
+              style={{
+                background: 'transparent',
+                color: 'var(--lr-gold)',
+                border: '1px solid var(--lr-gold)',
+              }}
+            >
+              Ask Jesse — AI Guide
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main
-        className={`pt-16 transition-all duration-300 ${
-          sidebarOpen ? 'pl-64' : 'pl-0'
-        }`}
-      >
-        <div className="p-6 lg:p-8">
-          {/* Page Title */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+      {/* Main */}
+      <main className={`pt-16 transition-all duration-300 ${sidebarOpen ? 'pl-64' : 'pl-0'}`}>
+        <div className="px-6 lg:px-10 pt-8 pb-12 max-w-7xl mx-auto">
+          <div className="mb-8">
+            <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+              {roleLabel}
+            </p>
+            <h1 className="font-(family-name:--font-italiana) text-3xl tracking-[0.06em] text-(--lr-gold)">
+              {title}
+            </h1>
+            <hr className="lr-separator mt-4 max-w-md" />
           </div>
-          
+
           {children}
         </div>
       </main>
 
-      {/* Chat Widget */}
       <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );

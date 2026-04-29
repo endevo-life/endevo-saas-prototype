@@ -1,0 +1,386 @@
+================================================================
+ENDEVO SAAS — AWS MASTER CONFIGURATION DOCUMENT
+================================================================
+Version: 1.0
+Environment: PRODUCTION (Trial/Live)
+Account ID: 383423735462
+Region: us-east-2 (except WAF + ACM = us-east-1)
+Date: February 2026
+================================================================
+
+----------------------------------------------------------------
+1. AWS ACCOUNT
+----------------------------------------------------------------
+Account ID       : 383423735462
+Region Primary   : us-east-2
+Region WAF/ACM   : us-east-1 (CloudFront requirement)
+Root Email       : bluesproutagency@gmail.com
+
+----------------------------------------------------------------
+2. VPC — NETWORK
+----------------------------------------------------------------
+VPC ID           : vpc-0b856771e2262f334
+CIDR             : (default AWS assigned)
+DNS Support      : Enabled
+DNS Hostnames    : Enabled
+Subnets          :
+  subnet-002fa90db5074ddc9  (AZ-a)
+  subnet-0a8e7018295cab476  (AZ-b)
+  subnet-083749763070d6def  (AZ-c)
+Internet Gateway : Attached
+Purpose          : Isolates Lambda and RDS from public internet
+
+----------------------------------------------------------------
+3. SECURITY GROUP
+----------------------------------------------------------------
+ID               : sg-05081c9d3c89e9312
+Name             : endevo-lambda-sg
+Inbound Rules    :
+  Port 5432  — PostgreSQL — Source: sg-05081c9d3c89e9312 (self)
+  Port 443   — HTTPS      — Source: sg-05081c9d3c89e9312 (self)
+Outbound Rules   :
+  All traffic — 0.0.0.0/0
+Attached To      : Lambda, RDS, VPC Endpoints
+Purpose          : Controls traffic between Lambda, RDS, VPC endpoints
+
+----------------------------------------------------------------
+4. RDS POSTGRESQL
+----------------------------------------------------------------
+Instance ID      : endevo-db-rds
+Endpoint         : endevo-db-rds.cr88sssmsfgf.us-east-2.rds.amazonaws.com
+Port             : 5432
+Engine           : PostgreSQL 18.2
+Instance Class   : db.t3.micro
+Database Name    : postgres
+Master Username  : dbadmin
+Master Password  : stored in Secrets Manager only
+Storage          : 20GB gp2 SSD
+Storage Encrypted: Yes (AES-256)
+Multi-AZ         : false (enable at first paying customer)
+Backup Retention : 7 days
+Backup Window    : 02:00-03:00 UTC
+Maintenance Win  : AWS default
+Publicly Accessible: No
+VPC              : vpc-0b856771e2262f334
+Subnets          : subnet-002fa90db5074ddc9, subnet-0a8e7018295cab476
+Security Group   : sg-05081c9d3c89e9312
+Tables Count     : 36
+RLS Enabled On   :
+  users
+  employee_assessments
+  employee_bookmarks
+  employee_certificates
+  employee_checklist_progress
+  employee_learning_progress
+  employee_reflections
+  audit_logs
+Purpose          : Primary database. All org, user, progress, checklist data.
+
+----------------------------------------------------------------
+5. SECRETS MANAGER
+----------------------------------------------------------------
+Secret Name      : endevo/production/db
+ARN              : arn:aws:secretsmanager:us-east-2:383423735462:secret:endevo/production/db-yTOW6I
+Region           : us-east-2
+Rotation         : Not enabled (enable post-MVP)
+Secret Keys      :
+  host       = endevo-db-rds.cr88sssmsfgf.us-east-2.rds.amazonaws.com
+  port       = 5432
+  database   = postgres
+  username   = dbadmin
+  password   = (encrypted)
+Cost             : $0.40/month
+Purpose          : Secure DB credential storage. Lambda fetches at runtime with 5-min cache.
+
+----------------------------------------------------------------
+6. LAMBDA
+----------------------------------------------------------------
+Function Name    : endevo-api
+ARN              : arn:aws:lambda:us-east-2:383423735462:function:endevo-api
+Runtime          : nodejs18.x
+Handler          : index.handler
+Memory           : 256MB
+Timeout          : 30 seconds
+Architecture     : x86_64
+VPC              : vpc-0b856771e2262f334
+Subnets          : subnet-002fa90db5074ddc9, subnet-0a8e7018295cab476
+Security Group   : sg-05081c9d3c89e9312
+Environment Variables:
+  SECRET_ARN       = arn:aws:secretsmanager:us-east-2:383423735462:secret:endevo/production/db-yTOW6I
+  JWT_SECRET       = (set in Lambda console — move to Parameter Store)
+  AWS_REGION_NAME  = us-east-2
+IAM Role Policies:
+  AWSLambdaVPCAccessExecutionRole
+  AmazonRDSFullAccess
+  SecretsManagerReadWrite
+  AmazonSESFullAccess
+  CloudWatchLogsFullAccess
+Reserved Concurrency: Not set (set to 10 to protect RDS — PENDING)
+Log Group        : /aws/lambda/endevo-api
+Purpose          : All backend business logic. Auth, modules, progress, HR, reminders.
+
+----------------------------------------------------------------
+7. API GATEWAY
+----------------------------------------------------------------
+API ID           : nb7h1yq3y8
+Name             : endevo-api-gateway
+Protocol         : HTTP (v2)
+Endpoint         : https://nb7h1yq3y8.execute-api.us-east-2.amazonaws.com/prod
+Stage            : prod
+Integration      : AWS_PROXY — Lambda endevo-api
+Payload Format   : 2.0
+Integration ID   : 24pytqt
+Throttling       : Not set (PENDING — must configure before pilot)
+CORS             : Allow-Origin * (PENDING — lock to endevo.life before pilot)
+Routes Configured:
+  POST   /auth/register
+  POST   /auth/login
+  GET    /auth/verify
+  POST   /auth/forgot-password
+  GET    /auth/me
+  GET    /modules
+  GET    /modules/{id}
+  GET    /progress
+  POST   /progress
+  POST   /checklist/complete
+  GET    /hr/dashboard
+  GET    /hr/employees
+  POST   /hr/invite
+  GET    /health
+  OPTIONS /{proxy+}
+Purpose          : HTTP entry point. Routes all frontend API calls to Lambda.
+
+----------------------------------------------------------------
+8. S3 — CONTENT BUCKET
+----------------------------------------------------------------
+Bucket Name      : endevo-content-production
+ARN              : arn:aws:s3:::endevo-content-production
+Region           : us-east-2
+Versioning       : Enabled
+Encryption       : AES-256
+Public Access    : Fully blocked
+CORS Origins     : https://endevo.life, https://*.endevo.life
+CORS Methods     : GET, PUT, POST
+Purpose          : Module PDFs, videos, worksheets. Private. Served via signed URLs.
+
+----------------------------------------------------------------
+9. S3 — FRONTEND BUCKET
+----------------------------------------------------------------
+Bucket Name      : endevo-frontend-production
+ARN              : arn:aws:s3:::endevo-frontend-production
+Region           : us-east-2
+Versioning       : Enabled
+Encryption       : AES-256
+Public Access    : Fully blocked
+Bucket Policy    : Allows CloudFront OAC E19IOQGX37C3QG only
+Purpose          : Hosts React frontend build. Served via CloudFront only.
+
+----------------------------------------------------------------
+10. CLOUDFRONT
+----------------------------------------------------------------
+Distribution ID  : E2CH9N3L4W6WV
+Domain           : d1mypniqejg9p0.cloudfront.net
+Custom Domain    : PENDING (endevo.life — waiting for Niki)
+OAC ID           : E19IOQGX37C3QG
+OAC Name         : endevo-frontend-oac
+Origin           : endevo-frontend-production.s3.us-east-2.amazonaws.com
+Default Root     : index.html
+Viewer Protocol  : Redirect HTTP to HTTPS
+Price Class      : PriceClass_100 (US, Canada, Europe)
+Compression      : Enabled
+Cache Policy     : 658327ea-f89d-4fab-a63d-7e88639e58f6 (CachingOptimized)
+Custom Error     : 403 → /index.html (React SPA routing)
+WAF              : arn:aws:wafv2:us-east-1:383423735462:global/webacl/endevo-waf/84134b6e-b1e6-4f93-bddb-9b16d99d46ef
+SSL Certificate  : PENDING ACM (us-east-1 — needed when domain arrives)
+Purpose          : CDN for frontend. HTTPS enforcement. WAF attachment. Global fast delivery.
+
+----------------------------------------------------------------
+11. WAF
+----------------------------------------------------------------
+Name             : endevo-waf
+ARN              : arn:aws:wafv2:us-east-1:383423735462:global/webacl/endevo-waf/84134b6e-b1e6-4f93-bddb-9b16d99d46ef
+Scope            : CLOUDFRONT (global — us-east-1)
+Attached To      : CloudFront E2CH9N3L4W6WV
+Rules:
+  Priority 1 — AWSManagedRulesCommonRuleSet  (XSS, bad inputs)
+  Priority 2 — AWSManagedRulesSQLiRuleSet    (SQL injection)
+  Priority 3 — RateBasedStatement            (block IP > 2000 req/5min)
+Default Action   : Allow
+Metrics          : CloudWatch enabled
+Purpose          : Protects frontend and API from attacks, bots, SQL injection.
+
+----------------------------------------------------------------
+12. SES — EMAIL
+----------------------------------------------------------------
+Identity         : bluesproutagency@gmail.com
+Region           : us-east-2
+Verification     : Success
+Sending Enabled  : Yes
+Production Access: Submitted — pending AWS approval (24-48hrs)
+Daily Quota      : 200 (sandbox) → 50,000 (after production approval)
+Mail Type        : TRANSACTIONAL
+Website URL      : https://endevo.life
+Email Types Sent :
+  Welcome email on registration
+  Weekly reminder — inactive employees
+  HR admin invitation
+  Password reset
+Purpose          : All transactional email delivery. Zero marketing emails.
+
+----------------------------------------------------------------
+13. EVENTBRIDGE
+----------------------------------------------------------------
+Rule Name        : endevo-weekly-reminder
+ARN              : arn:aws:events:us-east-2:383423735462:rule/endevo-weekly-reminder
+Schedule         : cron(0 14 ? * MON *)  — Every Monday 2:00 PM UTC
+State            : ENABLED
+Target           : arn:aws:lambda:us-east-2:383423735462:function:endevo-api
+Input Payload    : {"source":"eventbridge","action":"weekly_reminder"}
+Logic            : Finds employees inactive 7+ days with incomplete modules → sends SES email
+Purpose          : Automated engagement nudge. No server. Zero cost.
+
+----------------------------------------------------------------
+14. SNS
+----------------------------------------------------------------
+Topic Name       : endevo-alerts
+ARN              : arn:aws:sns:us-east-2:383423735462:endevo-alerts
+Region           : us-east-2
+Subscriptions    : Add email subscription manually in console
+Purpose          : Receives CloudWatch alarm notifications. Alerts team on incidents.
+
+----------------------------------------------------------------
+15. CLOUDWATCH
+----------------------------------------------------------------
+Log Group        : /aws/lambda/endevo-api
+Alarms:
+  endevo-lambda-errors
+    Metric    : Lambda Errors
+    Threshold : >= 5 errors in 5 minutes
+    Action    : SNS endevo-alerts
+
+  endevo-lambda-duration
+    Metric    : Lambda Duration
+    Threshold : >= 10000ms average in 5 minutes
+    Action    : None (add SNS — PENDING)
+
+  endevo-rds-connections
+    Metric    : RDS DatabaseConnections
+    Threshold : >= 50 connections in 5 minutes
+    Action    : None (add SNS — PENDING)
+Purpose          : Monitors health. Alerts before demo or pilot breaks.
+
+----------------------------------------------------------------
+16. VPC ENDPOINT — SECRETS MANAGER
+----------------------------------------------------------------
+Endpoint ID      : vpce-033e4e3aa29a99ecd
+Service          : com.amazonaws.us-east-2.secretsmanager
+Type             : Interface
+VPC              : vpc-0b856771e2262f334
+Subnets          : subnet-002fa90db5074ddc9, subnet-0a8e7018295cab476
+Security Group   : sg-05081c9d3c89e9312
+Private DNS      : Enabled
+Purpose          : Lambda reaches Secrets Manager privately inside VPC. No internet needed.
+
+----------------------------------------------------------------
+17. ROUTE53
+----------------------------------------------------------------
+Status           : PENDING — waiting for Niki to provide endevo.life domain
+Hosted Zone      : Not created yet
+Records Needed   :
+  A record  endevo.life     → CloudFront d1mypniqejg9p0.cloudfront.net
+  A record  api.endevo.life → API Gateway (after CloudFront for API added)
+Health Check     : Not configured (PENDING)
+Cost             : $0.50/month per hosted zone
+
+----------------------------------------------------------------
+18. ACM — SSL CERTIFICATE
+----------------------------------------------------------------
+Status           : PENDING — create when domain arrives
+Region           : MUST be us-east-1 (CloudFront requirement)
+Domain           : endevo.life
+Alt Names        : *.endevo.life
+Validation       : DNS validation via Route53
+Cost             : $0
+
+----------------------------------------------------------------
+19. IAM — LAMBDA EXECUTION ROLE
+----------------------------------------------------------------
+Role Name        : (check Lambda console for exact name)
+Policies Attached:
+  AWSLambdaVPCAccessExecutionRole  — VPC + CloudWatch logs
+  AmazonRDSFullAccess              — RDS connect
+  SecretsManagerReadWrite          — Fetch DB secret
+  AmazonSESFullAccess              — Send emails
+  CloudWatchLogsFullAccess         — Write logs
+Purpose          : Grants Lambda permission to call all required AWS services.
+
+================================================================
+PENDING ITEMS — MUST COMPLETE BEFORE PILOT
+================================================================
+1.  API Gateway throttling — default rate + burst limits
+2.  Lambda reserved concurrency — cap at 10 (protects RDS)
+3.  CloudFront for API Gateway — custom domain api.endevo.life
+4.  CORS locked — change * to endevo.life only
+5.  JWT_SECRET → Parameter Store SecureString
+6.  ACM SSL certificate — us-east-1 — when domain arrives
+7.  Route53 hosted zone — when domain arrives
+8.  SNS email subscription — add real alert email
+9.  CloudWatch alarm actions — attach SNS to duration + RDS alarms
+10. GitHub Actions CI/CD — Nermeen tonight
+11. RDS Multi-AZ — at first paying customer
+12. RDS Proxy — at 5+ concurrent customers
+
+================================================================
+ENVIRONMENT REPLICATION GUIDE
+================================================================
+To create DEV / TEST / UAT / STAGING — repeat these steps
+with these naming changes:
+
+Production prefix : endevo-*-production
+Dev prefix        : endevo-*-dev
+UAT prefix        : endevo-*-uat
+Staging prefix    : endevo-*-staging
+
+Services to duplicate per environment:
+  - RDS instance (can use t3.micro for all non-prod)
+  - Lambda function
+  - API Gateway stage
+  - Secrets Manager secret
+  - S3 buckets (frontend + content)
+  - CloudFront distribution
+
+Services that can be SHARED across environments:
+  - VPC and subnets
+  - SES identity
+  - Route53 hosted zone (use subdomains: dev.endevo.life)
+  - WAF (add environment-specific rules)
+  - SNS topic
+  - CloudWatch log groups (separate by function name)
+
+Cost per additional environment: ~$17/month (RDS dominates)
+
+================================================================
+QUICK REFERENCE — ENDPOINTS AND IDENTIFIERS
+================================================================
+API Endpoint     : https://nb7h1yq3y8.execute-api.us-east-2.amazonaws.com/prod
+Frontend URL     : https://d1mypniqejg9p0.cloudfront.net
+DB Host          : endevo-db-rds.cr88sssmsfgf.us-east-2.rds.amazonaws.com
+DB Port          : 5432
+DB Name          : postgres
+Lambda Name      : endevo-api
+S3 Frontend      : endevo-frontend-production
+S3 Content       : endevo-content-production
+CloudFront ID    : E2CH9N3L4W6WV
+WAF ARN          : arn:aws:wafv2:us-east-1:383423735462:global/webacl/endevo-waf/84134b6e-b1e6-4f93-bddb-9b16d99d46ef
+Secret ARN       : arn:aws:secretsmanager:us-east-2:383423735462:secret:endevo/production/db-yTOW6I
+EventBridge Rule : endevo-weekly-reminder
+SNS Topic        : arn:aws:sns:us-east-2:383423735462:endevo-alerts
+VPC ID           : vpc-0b856771e2262f334
+Security Group   : sg-05081c9d3c89e9312
+VPC Endpoint     : vpce-033e4e3aa29a99ecd
+AWS Account      : 383423735462
+AWS Region       : us-east-2
+
+================================================================
+END OF DOCUMENT
+================================================================

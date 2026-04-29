@@ -1,0 +1,82 @@
+name: 🚀 Deploy to Development
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: dev
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Dev
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.endevo.com
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build
+        env:
+          NEXT_PUBLIC_ENV: development
+          NEXT_PUBLIC_API_URL: https://dev-api.endevo.com
+          NEXT_PUBLIC_APP_URL: https://dev.endevo.com
+
+      # Option A: Deploy to Vercel (Easiest)
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+        if: false  # Enable this when ready
+
+      # Option B: Deploy to AWS Amplify
+      - name: 🔑 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+        if: false  # Enable when AWS is configured
+
+      # Option C: Build info only (for now)
+      - name: 📝 Deployment info
+        run: |
+          echo "### Deployment Info 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** Development" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Next: Configure Vercel or AWS Amplify credentials to enable automatic deployment" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📢 Comment on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Development build successful! Ready for deployment.'
+            })
