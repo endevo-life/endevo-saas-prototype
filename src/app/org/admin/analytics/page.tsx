@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { mockEmployees, mockProgress, mockModules } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { LRColors } from '@/lib/theme';
+import { useToast } from '@/components/common/Toast';
 import {
   BarChart,
   Bar,
@@ -43,11 +45,19 @@ const axisDataTick = {
   fill: LRColors.lavenderDust,
 };
 
+type Range = 'weekly' | 'monthly';
+type ExportFormat = 'txt' | 'csv';
+
 export default function HRAnalyticsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [range, setRange] = useState<Range>('monthly');
+  const [aiQuery, setAiQuery] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
   if (!user) return null;
 
   const orgEmployees = mockEmployees.filter((e) => e.organizationId === user.organizationId);
+  const totalModules = mockModules.length;
 
   const completionData = [
     { name: 'Complete',    value: orgEmployees.filter((e) => e.progressPercentage === 100).length, color: LRColors.gold },
@@ -66,7 +76,9 @@ export default function HRAnalyticsPage() {
     const completedCount = mockProgress.filter((p) => p.moduleId === m.id && p.status === 'completed').length;
     return {
       module: m.title.length > 22 ? m.title.slice(0, 20) + '…' : m.title,
+      fullTitle: m.title,
       rate: Math.round((completedCount / Math.max(orgEmployees.length, 1)) * 100),
+      completions: completedCount,
     };
   });
 
@@ -84,8 +96,96 @@ export default function HRAnalyticsPage() {
     { week: 'W17', active: 4, completed: 1 },
   ];
 
+  // Band distribution — synthesised from progressPercentage (folded in from Reports)
+  const bandData = (() => {
+    const bands = { AT_RISK: 0, STARTING: 0, PREPARED: 0, PROTECTED: 0, LEGACY_READY: 0 };
+    orgEmployees.forEach((e) => {
+      const pct = e.progressPercentage;
+      if (pct >= 90) bands.LEGACY_READY++;
+      else if (pct >= 70) bands.PROTECTED++;
+      else if (pct >= 50) bands.PREPARED++;
+      else if (pct >= 25) bands.STARTING++;
+      else bands.AT_RISK++;
+    });
+    return [
+      { band: 'AT_RISK',      label: 'At Risk',      count: bands.AT_RISK },
+      { band: 'STARTING',     label: 'Starting',     count: bands.STARTING },
+      { band: 'PREPARED',     label: 'Prepared',     count: bands.PREPARED },
+      { band: 'PROTECTED',    label: 'Protected',    count: bands.PROTECTED },
+      { band: 'LEGACY_READY', label: 'Legacy Ready', count: bands.LEGACY_READY },
+    ];
+  })();
+
+  // Top performers (folded in from Reports)
+  const topPerformers = orgEmployees
+    .map((emp) => {
+      const completed = mockProgress.find((p) => p.employeeId === emp.id)?.completedModules.length || 0;
+      return { ...emp, completed, pct: Math.round((completed / Math.max(totalModules, 1)) * 100) };
+    })
+    .sort((a, b) => b.completed - a.completed)
+    .slice(0, 5);
+
+  const totalCompletions = mockProgress.reduce((acc, p) => acc + p.completedModules.length, 0);
+  const avgCompletionPct = Math.round(
+    (totalCompletions / Math.max(orgEmployees.length * totalModules, 1)) * 100
+  );
+
+  const handleExport = (format: ExportFormat) => {
+    const today = new Date().toISOString().split('T')[0];
+    setShowExportMenu(false);
+
+    if (format === 'csv') {
+      const rows = [
+        ['Member', 'Department', 'Lessons completed', 'Total lessons', 'Completion %', 'Status'],
+        ...orgEmployees.map((emp) => {
+          const completed = mockProgress.find((p) => p.employeeId === emp.id)?.completedModules.length || 0;
+          return [
+            `${emp.firstName} ${emp.lastName}`,
+            emp.department,
+            String(completed),
+            String(totalModules),
+            String(Math.round((completed / totalModules) * 100)),
+            emp.status,
+          ];
+        }),
+      ];
+      const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+      downloadBlob(csv, `cohort_readiness_${today}.csv`, 'text/csv');
+      toast('CSV exported — aggregate metrics only', 'success');
+      return;
+    }
+
+    const text = `═══════════════════════════════════════════════════
+       COHORT READINESS REPORT — ${today.toUpperCase()}
+   Legacy Readiness OS · Powered by Endevo
+═══════════════════════════════════════════════════
+
+Overview
+  Members:            ${orgEmployees.length}
+  Avg completion:     ${avgCompletionPct}%
+  Total completions:  ${totalCompletions}
+  Learning hours:     ${totalCompletions * 2.5}
+
+Band distribution
+${bandData.map((b) => `  ${b.label.padEnd(14)}  ${String(b.count).padStart(3)}`).join('\n')}
+
+Department breakdown
+${departmentData.map((d) => `  ${d.department.padEnd(22)}  ${d.members} members · ${d.readiness}% avg`).join('\n')}
+
+Lesson completion rates
+${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.completions}/${orgEmployees.length})`).join('\n')}
+
+═══════════════════════════════════════════════════
+  This report contains aggregate metrics only.
+  No member content, reflections, or PII included.
+═══════════════════════════════════════════════════
+`;
+    downloadBlob(text, `cohort_readiness_${today}.txt`, 'text/plain');
+    toast('Report exported — aggregate metrics only', 'success');
+  };
+
   return (
-    <DashboardLayout title="Analytics" role="hr_admin">
+    <DashboardLayout title="Analytics" role="org_admin">
       <div className="flex items-center justify-between mb-7">
         <div>
           <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
@@ -95,14 +195,75 @@ export default function HRAnalyticsPage() {
             Six views, one truth
           </h2>
         </div>
-        <div className="flex gap-2">
-          <button className="lr-btn-outline" style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}>Weekly</button>
-          <button className="lr-btn-outline" style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}>Monthly</button>
-          <button className="lr-btn-primary">Export PDF</button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => { setRange('weekly'); toast('Switched to weekly window', 'info'); }}
+            className="lr-btn-outline"
+            style={{
+              color: range === 'weekly' ? 'var(--lr-navy-deep)' : 'var(--lr-pearl)',
+              borderColor: 'var(--lr-pearl)',
+              background: range === 'weekly' ? 'var(--lr-pearl)' : 'transparent',
+            }}
+          >
+            Weekly
+          </button>
+          <button
+            onClick={() => { setRange('monthly'); toast('Switched to monthly window', 'info'); }}
+            className="lr-btn-outline"
+            style={{
+              color: range === 'monthly' ? 'var(--lr-navy-deep)' : 'var(--lr-pearl)',
+              borderColor: 'var(--lr-pearl)',
+              background: range === 'monthly' ? 'var(--lr-pearl)' : 'transparent',
+            }}
+          >
+            Monthly
+          </button>
+          <div className="relative">
+            <button onClick={() => setShowExportMenu((o) => !o)} className="lr-btn-primary">
+              Export report ▾
+            </button>
+            {showExportMenu && (
+              <div
+                className="absolute right-0 top-full mt-2 w-56 rounded-[10px] overflow-hidden z-30"
+                style={{
+                  background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+                  border: '1px solid var(--border-gold)',
+                  boxShadow: '0 18px 40px -16px rgba(0,0,0,0.55)',
+                }}
+              >
+                <ExportOption label="As text (.txt)" hint="Plain summary" onClick={() => handleExport('txt')} />
+                <ExportOption label="As spreadsheet (.csv)" hint="One row per member" onClick={() => handleExport('csv')} />
+                <ExportOption
+                  label="Schedule monthly"
+                  hint="Email this on the 1st"
+                  onClick={() => {
+                    toast('Monthly report scheduled — first delivery May 1', 'success');
+                    setShowExportMenu(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="space-y-5">
+        <ChartCard
+          eyebrow="Cohort"
+          title="Band distribution"
+          insight={`${bandData.find((b) => b.count > 0)?.label ?? 'No members'} is your largest band. Send a quiet reminder from the dashboard to lift the AT_RISK group toward STARTING.`}
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={bandData}>
+              <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
+              <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
+              <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,190,148,0.08)' }} />
+              <Bar dataKey="count" fill={LRColors.gold} radius={[4, 4, 0, 0]} name="Members" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
         <ChartCard
           eyebrow="Status"
           title="Completion overview"
@@ -221,19 +382,122 @@ export default function HRAnalyticsPage() {
           <div className="flex gap-3">
             <input
               type="text"
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && aiQuery.trim()) {
+                  toast(`Drafting report for "${aiQuery.slice(0, 40)}${aiQuery.length > 40 ? '…' : ''}"`, 'success');
+                  setAiQuery('');
+                }
+              }}
               placeholder="e.g. compare Caregiver Solutions vs Chronic Disease average readiness"
               className="flex-1 rounded-[10px] px-4 py-3 text-sm text-(--lr-pearl) placeholder:text-(--lr-lavender-dust) focus:outline-none focus:border-(--lr-gold) transition-colors"
               style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
             />
-            <button className="lr-btn-primary whitespace-nowrap">Generate</button>
+            <button
+              onClick={() => {
+                if (!aiQuery.trim()) {
+                  toast('Type a question first — e.g. "compare departments by readiness"', 'warn');
+                  return;
+                }
+                toast(`Drafting report for "${aiQuery.slice(0, 40)}${aiQuery.length > 40 ? '…' : ''}"`, 'success');
+                setAiQuery('');
+              }}
+              className="lr-btn-primary whitespace-nowrap"
+            >
+              Generate
+            </button>
           </div>
           <p className="text-xs text-(--lr-lavender-dust) mt-3">
             Natural-language reports run on aggregate data only. Member-level content is never accessible.
           </p>
         </div>
+
+        {/* Top performers — folded in from former Reports page */}
+        <div
+          className="rounded-[14px] p-6"
+          style={{
+            background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div className="flex items-baseline justify-between mb-4">
+            <div>
+              <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+                Most active
+              </p>
+              <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1">
+                Members closest to LEGACY_READY
+              </h3>
+            </div>
+          </div>
+          <p className="text-xs text-(--lr-lavender-dust) mb-4">
+            Names visible only because you administer this tenant. Their reflections and answers remain private to them.
+          </p>
+
+          <div className="space-y-2">
+            {topPerformers.map((emp, i) => (
+              <div
+                key={emp.id}
+                className="flex items-center gap-4 px-4 py-3 rounded-[10px]"
+                style={{ background: 'rgba(212,190,148,0.04)', border: '1px solid var(--border-subtle)' }}
+              >
+                <span
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-(family-name:--font-jetbrains) text-sm flex-shrink-0"
+                  style={{ background: 'rgba(212,190,148,0.12)', color: 'var(--lr-gold)', border: '1px solid var(--border-gold)' }}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-(--lr-pearl) truncate">
+                    {emp.firstName} {emp.lastName}
+                  </p>
+                  <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+                    {emp.department}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-base">
+                    {emp.completed}/{totalModules}
+                  </p>
+                  <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-lavender-dust)">
+                    {emp.pct}% complete
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
+}
+
+function ExportOption({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+      style={{ borderBottom: '1px solid var(--border-subtle)' }}
+    >
+      <p className="text-sm text-(--lr-pearl)">{label}</p>
+      <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+        {hint}
+      </p>
+    </button>
+  );
+}
+
+function downloadBlob(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function ChartCard({

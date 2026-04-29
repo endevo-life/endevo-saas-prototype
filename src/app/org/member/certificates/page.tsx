@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockEmployees } from '@/lib/mock-data';
+import { mockEmployees, mockProgress, mockModules } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import LRMonogram from '@/components/common/LRMonogram';
 
@@ -11,6 +11,14 @@ export default function FinalPlaybookPage() {
 
   const employee = mockEmployees.find((e) => e.id === user.id);
   const progress = employee?.progressPercentage ?? 0;
+
+  const memberProgress = mockProgress.filter((p) => p.employeeId === user.id);
+  const completedModules = memberProgress.filter((p) => p.status === 'completed');
+  const inProgressModules = memberProgress.filter((p) => p.status === 'in_progress');
+  const hoursInvested = completedModules.reduce((sum, p) => {
+    const m = mockModules.find((mod) => mod.id === p.moduleId);
+    return sum + (m?.estimatedHours ?? 0);
+  }, 0);
 
   // Three states map to demo personas: AT_RISK, STARTING, PROTECTED.
   const sectionsReady = progress >= 70 ? 4 : progress >= 25 ? 1 : 0;
@@ -65,11 +73,64 @@ ${sections[3].ready ? '✓ Compiled' : '· Pending'}
     URL.revokeObjectURL(url);
   };
 
+  const handleInterimSummary = () => {
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const summary = `═══════════════════════════════════════════════════
+       LEGACY PATH · INTERIM SUMMARY
+   Legacy Readiness OS · Powered by Endevo
+═══════════════════════════════════════════════════
+
+Member:        ${user.firstName} ${user.lastName}
+Generated:     ${today}
+
+Overall readiness:   ${progress}%
+Modules completed:   ${completedModules.length}
+Modules in progress: ${inProgressModules.length}
+Time invested:       ${hoursInvested.toFixed(1)} hours
+Assessment score:    ${employee?.assessmentScore ? `${employee.assessmentScore}/10` : 'Not yet taken'}
+
+Completed modules
+${completedModules.length === 0
+  ? '  (none yet — your journey is just beginning)'
+  : completedModules
+      .map((p) => {
+        const m = mockModules.find((mod) => mod.id === p.moduleId);
+        const date = p.completedAt ? new Date(p.completedAt).toLocaleDateString() : '';
+        return `  ✓ ${m?.title ?? p.moduleId}  ·  ${date}`;
+      })
+      .join('\n')}
+
+In progress
+${inProgressModules.length === 0
+  ? '  (nothing currently open)'
+  : inProgressModules
+      .map((p) => {
+        const m = mockModules.find((mod) => mod.id === p.moduleId);
+        return `  ◆ ${m?.title ?? p.moduleId}  ·  ${p.progressPercentage}%`;
+      })
+      .join('\n')}
+
+═══════════════════════════════════════════════════
+  This is your journey so far. The Final Playbook
+  compiles itself once each domain is complete.
+═══════════════════════════════════════════════════
+`;
+    const blob = new Blob([summary], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LegacyPath_InterimSummary_${user.firstName}_${user.lastName}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const isComplete = sectionsReady === 4;
   const isLocked = sectionsReady === 0;
 
   return (
-    <DashboardLayout title="Final Playbook" role="employee">
+    <DashboardLayout title="Final Playbook" role="org_member">
       {/* Hero */}
       <section
         className="rounded-[18px] mb-7 px-8 py-8 relative overflow-hidden"
@@ -98,9 +159,16 @@ ${sections[3].ready ? '✓ Compiled' : '· Pending'}
                 : `${sectionsReady} of 4 sections ready. Each domain you complete adds a chapter.`}
             </p>
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex items-center gap-3 flex-wrap">
               <button onClick={handleDownload} disabled={isLocked} className="lr-btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
                 {isLocked ? 'Locked — begin the path' : isComplete ? 'Download Final Playbook' : 'Download partial preview'}
+              </button>
+              <button
+                onClick={handleInterimSummary}
+                className="lr-btn-outline"
+                style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}
+              >
+                Export interim summary
               </button>
               {!isLocked && (
                 <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-lavender-dust)">

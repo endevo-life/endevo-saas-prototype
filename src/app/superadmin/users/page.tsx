@@ -13,7 +13,7 @@ export default function AdminUsersPage() {
   const [orgFilter, setOrgFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', role: 'employee', organizationId: 'org-1' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', role: 'org_member', organizationId: 'org-1' });
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -30,7 +30,7 @@ export default function AdminUsersPage() {
 
   const openAdd = () => {
     setEditingUser(null);
-    setForm({ firstName: '', lastName: '', email: '', role: 'employee', organizationId: 'org-1' });
+    setForm({ firstName: '', lastName: '', email: '', role: 'org_member', organizationId: 'org-1' });
     setShowAddModal(true);
   };
 
@@ -102,8 +102,8 @@ export default function AdminUsersPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
         <Stat label="Total" value={String(users.length)} accent />
-        <Stat label="Members" value={String(users.filter((u) => u.role === 'employee').length)} />
-        <Stat label="HR Admins" value={String(users.filter((u) => u.role === 'hr_admin').length)} />
+        <Stat label="Members" value={String(users.filter((u) => u.role === 'org_member').length)} />
+        <Stat label="Org Admins" value={String(users.filter((u) => u.role === 'org_admin').length)} />
         <Stat label="Super Admins" value={String(users.filter((u) => u.role === 'super_admin').length)} />
       </div>
 
@@ -131,8 +131,8 @@ export default function AdminUsersPage() {
         >
           <option value="all" style={{ background: 'var(--lr-navy-deep)' }}>All roles</option>
           <option value="super_admin" style={{ background: 'var(--lr-navy-deep)' }}>Super Admin</option>
-          <option value="hr_admin" style={{ background: 'var(--lr-navy-deep)' }}>HR Admin</option>
-          <option value="employee" style={{ background: 'var(--lr-navy-deep)' }}>Member</option>
+          <option value="org_admin" style={{ background: 'var(--lr-navy-deep)' }}>Org Admin</option>
+          <option value="org_member" style={{ background: 'var(--lr-navy-deep)' }}>Member</option>
         </select>
         <select
           value={orgFilter}
@@ -257,8 +257,8 @@ export default function AdminUsersPage() {
                   className="w-full rounded-[10px] px-3 py-2 text-sm text-(--lr-pearl) focus:outline-none focus:border-(--lr-gold)"
                   style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
                 >
-                  <option value="employee" style={{ background: 'var(--lr-navy-deep)' }}>Member</option>
-                  <option value="hr_admin" style={{ background: 'var(--lr-navy-deep)' }}>HR Admin</option>
+                  <option value="org_member" style={{ background: 'var(--lr-navy-deep)' }}>Member</option>
+                  <option value="org_admin" style={{ background: 'var(--lr-navy-deep)' }}>Org Admin</option>
                   <option value="super_admin" style={{ background: 'var(--lr-navy-deep)' }}>Super Admin</option>
                 </select>
               </ModalField>
@@ -333,14 +333,14 @@ function Th({ children, align = 'left' }: { children: React.ReactNode; align?: '
 }
 
 function RolePill({ role }: { role: User['role'] }) {
-  const label = role === 'super_admin' ? 'Super Admin' : role === 'hr_admin' ? 'HR Admin' : 'Member';
+  const label = role === 'super_admin' ? 'Super Admin' : role === 'org_admin' ? 'Org Admin' : 'Member';
   return (
     <span
       className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase px-2.5 py-1 rounded-full"
       style={{
-        color: role === 'employee' ? 'var(--lr-pearl)' : 'var(--lr-gold)',
-        border: `1px solid ${role === 'employee' ? 'var(--border-subtle)' : 'var(--border-gold)'}`,
-        background: role === 'employee' ? 'rgba(212,190,148,0.04)' : 'rgba(212,190,148,0.12)',
+        color: role === 'org_member' ? 'var(--lr-pearl)' : 'var(--lr-gold)',
+        border: `1px solid ${role === 'org_member' ? 'var(--border-subtle)' : 'var(--border-gold)'}`,
+        background: role === 'org_member' ? 'rgba(212,190,148,0.04)' : 'rgba(212,190,148,0.12)',
       }}
     >
       {label}

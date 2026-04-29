@@ -27,7 +27,7 @@ export default function AssessmentPage() {
   // Welcome screen before starting assessment
   if (showWelcome) {
     return (
-      <DashboardLayout title="Welcome" role="employee">
+      <DashboardLayout title="Welcome" role="org_member">
         <div className="max-w-3xl mx-auto">
           <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-6 text-white">
             <div className="text-center mb-6">
@@ -82,7 +82,7 @@ export default function AssessmentPage() {
             <PrivacyNote>
               <p>
                 <strong>Your privacy is protected.</strong> Your answers and progress are completely private.
-                Only you can see your responses. HR admins only see completion status.
+                Only you can see your responses. Org admins only see completion status.
               </p>
             </PrivacyNote>
 
@@ -145,7 +145,7 @@ export default function AssessmentPage() {
     }
     
     // Redirect to dashboard
-    router.push('/employee/dashboard');
+    router.push('/org/member/dashboard');
   };
 
   if (showResults) {
@@ -153,7 +153,7 @@ export default function AssessmentPage() {
     const assignedModules = assignModulesFromScore(score, answers);
 
     return (
-      <DashboardLayout title="Assessment Results" role="employee">
+      <DashboardLayout title="Assessment Results" role="org_member">
         <div className="max-w-3xl mx-auto">
           {/* Results Card */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
@@ -213,7 +213,7 @@ export default function AssessmentPage() {
             <PrivacyNote>
               <p>
                 <strong>Your privacy is protected.</strong> Your detailed answers are private and only visible to you.
-                HR admins can only see that you completed the assessment, not your individual responses.
+                Org admins can only see that you completed the assessment, not your individual responses.
               </p>
             </PrivacyNote>
 
@@ -230,7 +230,7 @@ export default function AssessmentPage() {
   }
 
   return (
-    <DashboardLayout title="Peace of Mind Assessment" role="employee">
+    <DashboardLayout title="Peace of Mind Assessment" role="org_member">
       <div className="max-w-3xl mx-auto">
         {/* Progress Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -290,7 +290,7 @@ export default function AssessmentPage() {
 
         {/* Privacy Note */}
         <PrivacyNote>
-          <strong>Privacy Note:</strong> Your answers are private and secure. HR only sees completion status,
+          <strong>Privacy Note:</strong> Your answers are private and secure. Org Admins only see completion status,
           not your individual responses.
         </PrivacyNote>
       </div>

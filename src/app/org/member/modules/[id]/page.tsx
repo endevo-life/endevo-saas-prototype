@@ -4,14 +4,24 @@ import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 
+interface Resource {
+  kind: 'typeform' | 'tool' | 'podcast' | 'video';
+  label: string;
+  url: string;
+  hint?: string;
+}
+
 interface Lesson {
   id: string;
   number: string;
   title: string;
-  type: 'video' | 'reading' | 'action';
+  type: 'video' | 'reading' | 'action' | 'explore';
   duration: string;
   driveId?: string;
+  /** Legacy single-link field — kept for backward compat with other domains. */
   externalUrl?: string;
+  /** Richer multi-link field — preferred for new lessons. */
+  resources?: Resource[];
   takeaways: string[];
 }
 
@@ -30,7 +40,7 @@ const DOMAINS: Record<string, DomainContent> = {
     number: '01',
     label: 'LEGAL',
     description: 'The language of estate, executor, beneficiary, will. The documents that protect those you love.',
-    totalLessons: 6,
+    totalLessons: 5,
     startedLessons: 1,
     xpPerLesson: 80,
     lessons: [
@@ -50,11 +60,18 @@ const DOMAINS: Record<string, DomainContent> = {
       {
         id: 'legal-goal-setting',
         number: '01.02',
-        title: 'Action Item · Project Goal Setting',
+        title: 'Action Item #1 · Project Goal Setting',
         type: 'action',
         duration: '8 min',
         driveId: '1_B3bBOZhEdRtAnLmIjgCNMQcoVyIpDy3',
-        externalUrl: 'https://jbigogmrgex.typeform.com/to/WfLmFB8k',
+        resources: [
+          {
+            kind: 'typeform',
+            label: 'Open the goal-setting form',
+            url: 'https://jbigogmrgex.typeform.com/to/WfLmFB8k',
+            hint: 'Private to you · 5 minutes',
+          },
+        ],
         takeaways: [
           'Define what "ready" looks like for you',
           'Identify the one fear holding you back',
@@ -64,11 +81,18 @@ const DOMAINS: Record<string, DomainContent> = {
       {
         id: 'legal-team',
         number: '01.03',
-        title: 'Action Item · Assign Roles for Your Legacy Team',
+        title: 'Action Item #2 · Assign Roles for Your Legacy Team',
         type: 'action',
         duration: '10 min',
         driveId: '1ksCg6c0n_idjwtFUZf6w2CgdFZFS1Sj5',
-        externalUrl: 'https://jbigogmrgex.typeform.com/to/pIgpXkq6',
+        resources: [
+          {
+            kind: 'typeform',
+            label: 'Map your legacy team',
+            url: 'https://jbigogmrgex.typeform.com/to/pIgpXkq6',
+            hint: 'Private to you · 6 minutes',
+          },
+        ],
         takeaways: [
           'Choose your executor (and a backup)',
           'Identify your healthcare proxy',
@@ -78,15 +102,61 @@ const DOMAINS: Record<string, DomainContent> = {
       {
         id: 'legal-will',
         number: '01.04',
-        title: 'Action Item · Plan Your Will',
+        title: 'Action Item #3 · Plan Your Will',
         type: 'action',
         duration: '15 min',
         driveId: '1jcKfaFZUgBYH6Akhb3w4cDITO8NtcL9o',
-        externalUrl: 'https://trustandwill.com/',
+        resources: [
+          {
+            kind: 'tool',
+            label: 'Trust & Will',
+            url: 'https://trustandwill.com/',
+            hint: 'Attorney-supported, paid · ~$159',
+          },
+          {
+            kind: 'tool',
+            label: 'FreeWill',
+            url: 'https://www.freewill.com/',
+            hint: 'Free, self-guided · simple estates',
+          },
+        ],
         takeaways: [
           'DIY vs attorney-drafted — when each makes sense',
           'The three things even a simple will must include',
           'How to keep it current after life changes',
+        ],
+      },
+      {
+        id: 'legal-explore',
+        number: '01.05',
+        title: 'Explore · Stories & Resources',
+        type: 'explore',
+        duration: '20 min',
+        driveId: '1xWSX8cJ0ZwfO-A-q1eJEjva977LHDD_r',
+        resources: [
+          {
+            kind: 'video',
+            label: 'Dying to Meet Joel',
+            url: 'https://drive.google.com/file/d/1xWSX8cJ0ZwfO-A-q1eJEjva977LHDD_r/view',
+            hint: 'Short film · loss & legacy',
+          },
+          {
+            kind: 'podcast',
+            label: 'Unclaimed Assets When You Die · Michael Zwick',
+            url: 'https://youtu.be/lspuELMp6Pw',
+            hint: 'Podcast · 28 min',
+          },
+          {
+            kind: 'podcast',
+            label: 'How to DIY Your Will or Trust · Cody Barbo',
+            url: 'https://youtu.be/2YYbmQMHheQ',
+            hint: 'Podcast · 32 min',
+          },
+        ],
+        takeaways: [
+          'Real stories from people who navigated loss without paperwork',
+          'How unclaimed assets become a quiet inheritance problem',
+          'When DIY tools fit — and when they don\'t',
         ],
       },
     ],
@@ -154,21 +224,138 @@ const DOMAINS: Record<string, DomainContent> = {
     number: '04',
     label: 'PHYSICAL',
     description: 'Belongings, ceremony preferences, the physical space of your life. Dignity in the details.',
-    totalLessons: 4,
+    totalLessons: 5,
     startedLessons: 0,
     xpPerLesson: 80,
     lessons: [
       {
-        id: 'physical-around-world',
+        id: 'physical-options',
         number: '04.01',
-        title: 'Death Around the World',
+        title: 'Learn · Physical Options',
         type: 'video',
-        duration: '11 min',
-        driveId: '1zqxFiEMaTcbfi-2I4YMO8QSzADi2Kgzl',
+        duration: '14 min',
+        driveId: '1ZORoacIa-qqajLTgl0Az93wcqwYszCWX',
         takeaways: [
-          'How different cultures honour the same threshold',
-          'Why "talking about it" doesn\'t shorten life',
-          'Choosing what feels right for you',
+          'The full menu of options most people never see',
+          'How preferences differ from instructions — and why both matter',
+          'Where your decisions intersect with your loved ones\' grief',
+        ],
+      },
+      {
+        id: 'physical-action-1',
+        number: '04.02',
+        title: 'Action Item #1 · Choose Your Direction',
+        type: 'action',
+        duration: '8 min',
+        driveId: '1xfQyTejFhihbApOKYgfSiaNbBAnS6Hgh',
+        takeaways: [
+          'Decide between the major care pathways',
+          'Capture the "why" behind your choice — for those who survive you',
+          'Write the one sentence that orients everything else',
+        ],
+      },
+      {
+        id: 'physical-action-2',
+        number: '04.03',
+        title: 'Action Item #2 · Five Wishes',
+        type: 'action',
+        duration: '12 min',
+        driveId: '1S1z3navV1I5A17WPiCOnkdNWHM-2HElf',
+        resources: [
+          {
+            kind: 'tool',
+            label: 'Five Wishes',
+            url: 'https://www.fivewishes.org/',
+            hint: 'Legally valid in 46 states · ~$5',
+          },
+        ],
+        takeaways: [
+          'The one document that covers medical, personal, and spiritual',
+          'Why "Five Wishes" reads like a letter — not a contract',
+          'How to keep it current and accessible to your proxy',
+        ],
+      },
+      {
+        id: 'physical-action-3',
+        number: '04.04',
+        title: 'Action Item #3 · Ceremony & Disposition',
+        type: 'action',
+        duration: '10 min',
+        driveId: '1pjE-AWDNemWfwUmphK6prTytZItjAhMv',
+        takeaways: [
+          'Articulate ceremony preferences without prescribing every detail',
+          'Disposition options: traditional, cremation, terramation, donation',
+          'How to leave room for the living to grieve their way',
+        ],
+      },
+      {
+        id: 'physical-explore',
+        number: '04.05',
+        title: 'Explore · Stories & Resources',
+        type: 'explore',
+        duration: '40 min',
+        driveId: '1cd2AlwA_XvtiiZ3hDDS5NPaZ8d_v3BBs',
+        resources: [
+          {
+            kind: 'video',
+            label: 'Dying to Meet Marianne Matzo, PhD',
+            url: 'https://drive.google.com/file/d/1cd2AlwA_XvtiiZ3hDDS5NPaZ8d_v3BBs/view',
+            hint: 'Conversation · 22 min',
+          },
+          {
+            kind: 'podcast',
+            label: 'Stoke Doctor\'s Urgent Plea · Michael Madison, MD',
+            url: 'https://www.youtube.com/watch?v=4fG5Tk5bZQg',
+            hint: 'Why advance care plans matter',
+          },
+          {
+            kind: 'podcast',
+            label: 'Terramation: Human Composting · Brienna Smith',
+            url: 'https://www.youtube.com/watch?v=R23N3_n-erU',
+            hint: 'Transforming death into life',
+          },
+          {
+            kind: 'podcast',
+            label: 'The Shocking Future of Funerals · Joél Simone Maldonado',
+            url: 'https://www.youtube.com/watch?v=0_06KPrVnlg',
+            hint: 'Embalming expert · industry shift',
+          },
+        ],
+        takeaways: [
+          'Hear from a palliative-care educator about what most people miss',
+          'The case for advance care planning — from a stroke physician',
+          'How disposition options are evolving beyond what most know',
+        ],
+      },
+    ],
+  },
+  build: {
+    number: '01',
+    label: 'BUILD MY PROJECT',
+    description: 'Set the foundation. One video, one form. Pre-fills the six domains ahead.',
+    totalLessons: 1,
+    startedLessons: 0,
+    xpPerLesson: 100,
+    lessons: [
+      {
+        id: 'build-foundation',
+        number: '01.01',
+        title: 'Build My Project — Foundation Setup',
+        type: 'action',
+        duration: '10 min',
+        driveId: '14Ap77YmhXueUokk3m0O7iXQ_svvAQzRz',
+        resources: [
+          {
+            kind: 'typeform',
+            label: 'Project Builder form',
+            url: 'https://jbigogmrgex.typeform.com/to/WTCq3oCB',
+            hint: 'Private to you · ~5 minutes',
+          },
+        ],
+        takeaways: [
+          'Define your scenario focus: die tomorrow, terminal diagnosis, long-term care',
+          'Identify the one or two people who must be told first',
+          'Set the cadence — how often you\'ll return to the path',
         ],
       },
     ],
@@ -190,10 +377,10 @@ export default function ModuleDetailPage({ params }: PageProps) {
 
   if (!domain) {
     return (
-      <DashboardLayout title="Path not found" role="employee">
+      <DashboardLayout title="Path not found" role="org_member">
         <div className="text-center py-16">
           <p className="text-(--lr-pearl) mb-6">That domain isn't available in this demo build.</p>
-          <button onClick={() => router.push('/employee/dashboard')} className="lr-btn-primary">
+          <button onClick={() => router.push('/org/member/dashboard')} className="lr-btn-primary">
             Return to Legacy Path
           </button>
         </div>
@@ -217,10 +404,10 @@ export default function ModuleDetailPage({ params }: PageProps) {
   };
 
   return (
-    <DashboardLayout title={`${domain.number} ${domain.label}`} role="employee">
+    <DashboardLayout title={`${domain.number} ${domain.label}`} role="org_member">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-xs font-(family-name:--font-jura) tracking-[0.18em] uppercase">
-        <button onClick={() => router.push('/employee/dashboard')} className="text-(--lr-gold-soft) hover:text-(--lr-gold) transition-colors">
+        <button onClick={() => router.push('/org/member/dashboard')} className="text-(--lr-gold-soft) hover:text-(--lr-gold) transition-colors">
           Legacy Path
         </button>
         <span className="text-(--lr-lavender-dust)">/</span>
@@ -359,33 +546,59 @@ export default function ModuleDetailPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Action item external link */}
-        {lesson.externalUrl && (
-          <div
-            className="rounded-[10px] p-4 mb-5 flex items-center justify-between gap-4"
-            style={{
-              background: 'rgba(212,190,148,0.08)',
-              border: '1px solid var(--border-gold)',
-            }}
-          >
-            <div>
-              <p className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.22em] uppercase text-(--lr-gold-soft)">
-                Action Item
-              </p>
-              <p className="text-sm text-(--lr-pearl) mt-0.5">
-                Complete the linked activity to mark this lesson done.
-              </p>
-            </div>
-            <a
-              href={lesson.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="lr-btn-primary whitespace-nowrap"
+        {/* Resources — multi-link block (typeforms, tools, podcasts, films) */}
+        {(() => {
+          const resources: Resource[] = lesson.resources
+            ? lesson.resources
+            : lesson.externalUrl
+            ? [{ kind: 'tool', label: 'Open activity', url: lesson.externalUrl }]
+            : [];
+          if (resources.length === 0) return null;
+
+          const sectionLabel =
+            lesson.type === 'explore'
+              ? 'Stories & resources'
+              : lesson.type === 'action'
+              ? 'Action item'
+              : 'Resources';
+
+          return (
+            <div
+              className="rounded-[10px] p-5 mb-5"
+              style={{
+                background: 'rgba(212,190,148,0.06)',
+                border: '1px solid var(--border-gold)',
+              }}
             >
-              Open ↗
-            </a>
-          </div>
-        )}
+              <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold)' }}>
+                {sectionLabel}
+              </p>
+              <div className="space-y-2">
+                {resources.map((r) => (
+                  <a
+                    key={r.url}
+                    href={r.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 px-4 py-3 rounded-[10px] transition-all hover:bg-white/[0.04] group"
+                    style={{ background: 'rgba(28,38,68,0.55)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    <ResourceIcon kind={r.kind} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-(--lr-pearl) truncate group-hover:text-(--lr-gold) transition-colors">
+                        {r.label}
+                      </p>
+                      <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+                        {r.kind} · {r.hint ?? 'opens in new tab'}
+                      </p>
+                    </div>
+                    <span className="text-(--lr-gold) flex-shrink-0">↗</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Takeaways */}
         <div className="mb-5">
@@ -421,7 +634,7 @@ export default function ModuleDetailPage({ params }: PageProps) {
             }}
           />
           <p className="text-[0.65rem] text-(--lr-lavender-dust) mt-2">
-            HR sees only that you completed the lesson. Your reflection stays with you.
+            Org Admin sees only that you completed the lesson. Your reflection stays with you.
           </p>
         </div>
 
@@ -464,5 +677,45 @@ function Mini({ label, value }: { label: string; value: string }) {
       </p>
       <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-base">{value}</p>
     </div>
+  );
+}
+
+/** Tiny iconographic glyph per resource kind. SVG, brand-aligned. */
+function ResourceIcon({ kind }: { kind: Resource['kind'] }) {
+  const stroke = 'var(--lr-gold)';
+  return (
+    <span
+      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{
+        background: 'rgba(212,190,148,0.1)',
+        border: '1px solid var(--border-gold)',
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        {kind === 'video' && (
+          <>
+            <rect x="1" y="3" width="14" height="10" rx="2" stroke={stroke} strokeWidth="1.2" />
+            <path d="M7 6L10.5 8L7 10V6Z" fill={stroke} />
+          </>
+        )}
+        {kind === 'podcast' && (
+          <>
+            <rect x="6" y="1" width="4" height="9" rx="2" stroke={stroke} strokeWidth="1.2" />
+            <path d="M3 7V8C3 10.7614 5.23858 13 8 13M13 7V8C13 10.7614 10.7614 13 8 13M8 13V15" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+          </>
+        )}
+        {kind === 'typeform' && (
+          <>
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke={stroke} strokeWidth="1.2" />
+            <path d="M5 6H11M5 9H11M5 12H8" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+          </>
+        )}
+        {kind === 'tool' && (
+          <>
+            <path d="M11 1L8 4L8 8L4 12L4 13.5L1 13.5M11 1L13.5 1L13.5 3.5L15 5L11 9L8 6L11 1Z" stroke={stroke} strokeWidth="1.2" strokeLinejoin="round" />
+          </>
+        )}
+      </svg>
+    </span>
   );
 }

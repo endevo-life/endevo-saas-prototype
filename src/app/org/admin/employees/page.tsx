@@ -1,98 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import Button from '@/components/common/Button';
 import { mockEmployees, mockProgress, mockModules, Employee } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/common/Toast';
+
+type Status = 'active' | 'inactive';
+type Band = 'AT_RISK' | 'STARTING' | 'PREPARED' | 'PROTECTED' | 'LEGACY_READY';
+
+function bandFor(progress: number): { id: Band; label: string } {
+  if (progress >= 90) return { id: 'LEGACY_READY', label: 'Legacy Ready' };
+  if (progress >= 70) return { id: 'PROTECTED',    label: 'Protected'    };
+  if (progress >= 50) return { id: 'PREPARED',     label: 'Prepared'     };
+  if (progress >= 25) return { id: 'STARTING',     label: 'Starting'     };
+  return                     { id: 'AT_RISK',      label: 'At Risk'      };
+}
+
+const BAND_PALETTE: Record<Band, { color: string; border: string; bg: string }> = {
+  AT_RISK:      { color: 'var(--lr-lavender-dust)', border: 'var(--lr-lavender-dust)', bg: 'rgba(180,175,195,0.15)' },
+  STARTING:     { color: 'var(--lr-gold-pale)',     border: 'var(--lr-gold-pale)',     bg: 'rgba(228,215,185,0.18)' },
+  PREPARED:     { color: 'var(--lr-gold-soft)',     border: 'var(--lr-gold-soft)',     bg: 'rgba(195,172,128,0.18)' },
+  PROTECTED:    { color: 'var(--lr-gold)',          border: 'var(--lr-gold)',          bg: 'rgba(212,190,148,0.20)' },
+  LEGACY_READY: { color: 'var(--lr-gold)',          border: 'var(--lr-gold)',          bg: 'rgba(212,190,148,0.30)' },
+};
 
 export default function HREmployeesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [editing, setEditing] = useState<Employee | null>(null);
+  const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     email: '',
     firstName: '',
     lastName: '',
     department: '',
     jobTitle: '',
     hireDate: '',
-    status: 'active' as 'active' | 'inactive',
+    status: 'active' as Status,
   });
 
   if (!user) return null;
 
-  const orgEmployees = employees.filter(e => e.organizationId === user.organizationId);
+  const orgEmployees = employees.filter((e) => e.organizationId === user.organizationId);
 
-  const getEmployeeProgress = (employeeId: string) => {
-    const progress = mockProgress.find(p => p.employeeId === employeeId);
+  const departments = useMemo(() => [...new Set(orgEmployees.map((e) => e.department))], [orgEmployees]);
+
+  const getProgress = (employeeId: string) => {
+    const progress = mockProgress.find((p) => p.employeeId === employeeId);
     if (!progress) return { completed: 0, total: mockModules.length, percentage: 0 };
-    
     const completed = progress.completedModules.length;
     const total = mockModules.length;
     return { completed, total, percentage: Math.round((completed / total) * 100) };
   };
 
-  const handleAddEmployee = () => {
-    const newEmployee: Employee = {
-      id: `emp-${Date.now()}`,
-      organizationId: user.organizationId!,
-      email: formData.email,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      role: 'employee',
-      status: formData.status,
-      onboardedAt: new Date().toISOString(),
-      lastLoginAt: null,
-      progressPercentage: 0,
-      assessmentScore: null,
-      department: formData.department,
-      jobTitle: formData.jobTitle,
-      hireDate: formData.hireDate,
-    };
-    setEmployees([...employees, newEmployee]);
-    setShowAddModal(false);
+  const filtered = orgEmployees.filter((emp) => {
+    const matchesSearch =
+      emp.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      emp.lastName.toLowerCase().includes(search.toLowerCase()) ||
+      emp.email.toLowerCase().includes(search.toLowerCase());
+    const matchesDepartment = departmentFilter === 'all' || emp.department === departmentFilter;
+    const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
+    return matchesSearch && matchesDepartment && matchesStatus;
+  });
+
+  const resetForm = () =>
+    setForm({ email: '', firstName: '', lastName: '', department: '', jobTitle: '', hireDate: '', status: 'active' });
+
+  const openAdd = () => {
+    setEditing(null);
     resetForm();
+    setShowAddModal(true);
   };
 
-  const handleEditEmployee = () => {
-    if (!selectedEmployee) return;
-    const updatedEmployees = employees.map((emp) =>
-      emp.id === selectedEmployee.id
-        ? {
-            ...emp,
-            email: formData.email,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            department: formData.department,
-            jobTitle: formData.jobTitle,
-            hireDate: formData.hireDate,
-            status: formData.status,
-          }
-        : emp
-    );
-    setEmployees(updatedEmployees);
-    setShowEditModal(false);
-    setSelectedEmployee(null);
-    resetForm();
-  };
-
-  const handleDeleteEmployee = (id: string) => {
-    if (confirm('Are you sure you want to remove this employee? This action cannot be undone.')) {
-      setEmployees(employees.filter((emp) => emp.id !== id));
-    }
-  };
-
-  const openEditModal = (emp: Employee) => {
-    setSelectedEmployee(emp);
-    setFormData({
+  const openEdit = (emp: Employee) => {
+    setEditing(emp);
+    setForm({
       email: emp.email,
       firstName: emp.firstName,
       lastName: emp.lastName,
@@ -101,386 +89,377 @@ export default function HREmployeesPage() {
       hireDate: emp.hireDate,
       status: emp.status,
     });
-    setShowEditModal(true);
+    setShowAddModal(true);
   };
 
-  const resetForm = () => {
-    setFormData({
-      email: '',
-      firstName: '',
-      lastName: '',
-      department: '',
-      jobTitle: '',
-      hireDate: '',
-      status: 'active',
-    });
+  const handleSubmit = () => {
+    if (!form.firstName.trim() || !form.email.trim()) {
+      toast('First name and email are required', 'warn');
+      return;
+    }
+    if (editing) {
+      setEmployees(employees.map((e) => (e.id === editing.id ? { ...e, ...form } : e)));
+      toast(`${form.firstName} ${form.lastName} updated`, 'success');
+    } else {
+      const newEmp: Employee = {
+        id: `emp-${Date.now()}`,
+        organizationId: user.organizationId!,
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        role: 'org_member',
+        status: form.status,
+        onboardedAt: new Date().toISOString(),
+        lastLoginAt: null,
+        progressPercentage: 0,
+        assessmentScore: null,
+        department: form.department,
+        jobTitle: form.jobTitle,
+        hireDate: form.hireDate,
+      };
+      setEmployees([...employees, newEmp]);
+      toast(`${form.firstName} ${form.lastName} invited`, 'success');
+    }
+    setShowAddModal(false);
+    setEditing(null);
+    resetForm();
   };
 
-  const filteredEmployees = orgEmployees.filter((emp) => {
-    const matchesSearch = 
-      emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = departmentFilter === 'all' || emp.department === departmentFilter;
-    const matchesStatus = statusFilter === 'all' || emp.status === statusFilter;
-    return matchesSearch && matchesDepartment && matchesStatus;
-  });
+  const handleRemove = (emp: Employee) => {
+    if (confirm(`Remove ${emp.firstName} ${emp.lastName} from this tenant?`)) {
+      setEmployees(employees.filter((e) => e.id !== emp.id));
+      toast(`${emp.firstName} ${emp.lastName} removed`, 'warn');
+    }
+  };
 
-  const departments = [...new Set(orgEmployees.map(e => e.department))];
+  const handleNudge = (emp: Employee) => {
+    toast(`Reminder queued for ${emp.firstName} — gentle, brand-voiced`, 'success');
+  };
+
+  const avgReadiness = orgEmployees.length > 0
+    ? Math.round(orgEmployees.reduce((acc, e) => acc + getProgress(e.id).percentage, 0) / orgEmployees.length)
+    : 0;
 
   return (
-    <DashboardLayout title="Employee Management" role="hr_admin">
-      <div className="space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Employees</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--brand-primary)' }}>
-                  {orgEmployees.length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--brand-primary-tint-4)' }}>
-                <span className="text-2xl">👥</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--endevo-open-seas)' }}>
-                  {orgEmployees.filter(e => e.status === 'active').length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--endevo-open-seas-tint-4)' }}>
-                <span className="text-2xl">✅</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Avg Progress</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--endevo-setting-sun)' }}>
-                  {orgEmployees.length > 0 ? Math.round(orgEmployees.reduce((acc, emp) => acc + getEmployeeProgress(emp.id).percentage, 0) / orgEmployees.length) : 0}%
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-orange-100">
-                <span className="text-2xl">📊</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Departments</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'var(--endevo-guiding-light-shade-1)' }}>
-                  {departments.length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--endevo-guiding-light-tint-4)' }}>
-                <span className="text-2xl">🏢</span>
-              </div>
-            </div>
-          </div>
+    <DashboardLayout title="Members" role="org_admin">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+            Roster
+          </p>
+          <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.02em] mt-1">
+            People in your tenant
+          </h2>
+          <p className="text-xs text-(--lr-lavender-dust) mt-1.5">
+            Names visible only because you administer this tenant. Member content stays private.
+          </p>
         </div>
+        <button onClick={openAdd} className="lr-btn-primary">
+          + Invite member
+        </button>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <div className="flex flex-wrap gap-4">
-            <input
-              type="text"
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <select 
-              value={departmentFilter}
-              onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Departments</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <Button onClick={() => setShowAddModal(true)} variant="primary">
-              + Add Employee
-            </Button>
-          </div>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+        <Stat label="Members" value={String(orgEmployees.length)} accent />
+        <Stat label="Active" value={String(orgEmployees.filter((e) => e.status === 'active').length)} />
+        <Stat label="Avg readiness" value={`${avgReadiness}%`} />
+        <Stat label="Departments" value={String(departments.length)} />
+      </div>
 
-        {/* Employee Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEmployees.map(employee => {
-                  const progress = getEmployeeProgress(employee.id);
-                  
-                  return (
-                    <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shrink-0">
-                            {employee.firstName[0]}{employee.lastName[0]}
-                          </div>
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900">{employee.firstName} {employee.lastName}</div>
-                            <div className="text-sm text-gray-500">{employee.email}</div>
-                          </div>
+      {/* Filters */}
+      <div
+        className="rounded-[14px] p-4 mb-6 flex flex-wrap gap-3"
+        style={{
+          background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 min-w-64 rounded-[10px] px-4 py-2 text-sm text-(--lr-pearl) placeholder:text-(--lr-lavender-dust) focus:outline-none focus:border-(--lr-gold)"
+          style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
+        />
+        <select
+          value={departmentFilter}
+          onChange={(e) => setDepartmentFilter(e.target.value)}
+          className="rounded-[10px] px-4 py-2 text-sm text-(--lr-pearl) focus:outline-none focus:border-(--lr-gold)"
+          style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
+        >
+          <option value="all" style={{ background: 'var(--lr-navy-deep)' }}>All departments</option>
+          {departments.map((d) => (
+            <option key={d} value={d} style={{ background: 'var(--lr-navy-deep)' }}>{d}</option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-[10px] px-4 py-2 text-sm text-(--lr-pearl) focus:outline-none focus:border-(--lr-gold)"
+          style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
+        >
+          <option value="all" style={{ background: 'var(--lr-navy-deep)' }}>All status</option>
+          <option value="active" style={{ background: 'var(--lr-navy-deep)' }}>Active</option>
+          <option value="inactive" style={{ background: 'var(--lr-navy-deep)' }}>Inactive</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div
+        className="rounded-[14px] overflow-hidden"
+        style={{
+          background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: 'rgba(212,190,148,0.04)' }}>
+                <Th>Member</Th>
+                <Th>Department</Th>
+                <Th>Readiness</Th>
+                <Th>Band</Th>
+                <Th>Status</Th>
+                <Th align="right">Actions</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((emp) => {
+                const progress = getProgress(emp.id);
+                const band = bandFor(emp.progressPercentage);
+                const pal = BAND_PALETTE[band.id];
+                return (
+                  <tr key={emp.id} className="transition-colors hover:bg-white/[0.02]" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center font-(family-name:--font-jura) text-sm tracking-wider"
+                          style={{
+                            background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-midnight) 100%)',
+                            color: 'var(--lr-gold)',
+                            border: '1px solid var(--lr-gold)',
+                          }}
+                        >
+                          {emp.firstName[0]}
+                          {emp.lastName[0]}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{employee.department}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{employee.jobTitle}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="h-2 rounded-full transition-all"
-                              style={{ 
-                                width: `${progress.percentage}%`,
-                                backgroundColor: progress.percentage === 100 ? 'var(--endevo-open-seas)' : 'var(--endevo-setting-sun)'
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-700">{progress.percentage}%</span>
+                        <div>
+                          <p className="text-sm text-(--lr-pearl)">{emp.firstName} {emp.lastName}</p>
+                          <p className="text-[0.7rem] text-(--lr-lavender-dust)">{emp.jobTitle}</p>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          employee.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {employee.status}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-(--lr-pearl)">{emp.department}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3 min-w-[180px]">
+                        <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(212,190,148,0.12)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${progress.percentage}%`, background: pal.color }}
+                          />
+                        </div>
+                        <span className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-sm w-9 text-right">
+                          {progress.percentage}%
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
-                        <button className="text-blue-600 hover:text-blue-800 font-medium">View</button>
-                        <button 
-                          onClick={() => openEditModal(employee)}
-                          className="text-indigo-600 hover:text-indigo-800 font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteEmployee(employee.id)}
-                          className="text-red-600 hover:text-red-800 font-medium"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase px-2.5 py-1 rounded-full"
+                        style={{ color: pal.color, border: `1px solid ${pal.border}`, background: pal.bg }}
+                      >
+                        {band.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase px-2.5 py-1 rounded-full"
+                        style={{
+                          color: emp.status === 'active' ? 'var(--lr-gold)' : 'var(--lr-lavender-dust)',
+                          border: emp.status === 'active' ? '1px solid var(--lr-gold)' : '1px solid var(--border-subtle)',
+                          background: emp.status === 'active' ? 'rgba(212,190,148,0.1)' : 'rgba(212,190,148,0.04)',
+                        }}
+                      >
+                        {emp.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleNudge(emp)}
+                        className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-gold) hover:text-(--lr-gold-pale) mr-4"
+                      >
+                        Nudge
+                      </button>
+                      <button
+                        onClick={() => openEdit(emp)}
+                        className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-pearl) hover:text-(--lr-gold) mr-4"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleRemove(emp)}
+                        className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase hover:text-(--lr-gold-pale)"
+                        style={{ color: '#A65454' }}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-(--lr-lavender-dust)">
+                    No members match your filter.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Add Employee Modal */}
+      {/* Add / Edit modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">Add New Employee</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="john.doe@company.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                <input
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Engineering"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                <input
-                  type="text"
-                  value={formData.jobTitle}
-                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Software Engineer"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-                <input
-                  type="date"
-                  value={formData.hireDate}
-                  onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex space-x-3 mt-6">
-              <Button onClick={handleAddEmployee} variant="primary" fullWidth>
-                Add Employee
-              </Button>
-              <Button onClick={() => { setShowAddModal(false); resetForm(); }} variant="outline" fullWidth>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-[14px] p-7 max-w-md w-full max-h-[90vh] overflow-y-auto"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-gold)',
+            }}
+          >
+            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+              Roster
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.02em] mb-5">
+              {editing ? 'Edit member' : 'Invite member'}
+            </h3>
 
-      {/* Edit Employee Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">Edit Employee</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <ModalField label="First name">
+                  <ModalInput value={form.firstName} onChange={(v) => setForm({ ...form, firstName: v })} placeholder="Sarah" />
+                </ModalField>
+                <ModalField label="Last name">
+                  <ModalInput value={form.lastName} onChange={(v) => setForm({ ...form, lastName: v })} placeholder="Mitchell" />
+                </ModalField>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                <input
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                <input
-                  type="text"
-                  value={formData.jobTitle}
-                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-                <input
-                  type="date"
-                  value={formData.hireDate}
-                  onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+              <ModalField label="Email">
+                <ModalInput value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="sarah.mitchell@xyzcompany.com" type="email" />
+              </ModalField>
+              <ModalField label="Department">
+                <ModalInput value={form.department} onChange={(v) => setForm({ ...form, department: v })} placeholder="Caregiver Solutions" />
+              </ModalField>
+              <ModalField label="Job title">
+                <ModalInput value={form.jobTitle} onChange={(v) => setForm({ ...form, jobTitle: v })} placeholder="Senior Care Navigator" />
+              </ModalField>
+              <div className="grid grid-cols-2 gap-3">
+                <ModalField label="Hire date">
+                  <ModalInput value={form.hireDate} onChange={(v) => setForm({ ...form, hireDate: v })} type="date" />
+                </ModalField>
+                <ModalField label="Status">
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as Status })}
+                    className="w-full rounded-[10px] px-3 py-2 text-sm text-(--lr-pearl) focus:outline-none focus:border-(--lr-gold)"
+                    style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    <option value="active" style={{ background: 'var(--lr-navy-deep)' }}>Active</option>
+                    <option value="inactive" style={{ background: 'var(--lr-navy-deep)' }}>Inactive</option>
+                  </select>
+                </ModalField>
               </div>
             </div>
-            <div className="flex space-x-3 mt-6">
-              <Button onClick={handleEditEmployee} variant="primary" fullWidth>
-                Save Changes
-              </Button>
-              <Button onClick={() => { setShowEditModal(false); setSelectedEmployee(null); resetForm(); }} variant="outline" fullWidth>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={handleSubmit} className="lr-btn-primary flex-1">
+                {editing ? 'Save changes' : 'Send invite'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditing(null);
+                  resetForm();
+                }}
+                className="lr-btn-outline"
+                style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}
+              >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div
+      className="rounded-[14px] p-5"
+      style={{
+        background: accent
+          ? 'linear-gradient(180deg, rgba(212,190,148,0.16) 0%, rgba(212,190,148,0.06) 100%)'
+          : 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+        border: accent ? '1px solid var(--border-gold)' : '1px solid var(--border-subtle)',
+      }}
+    >
+      <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+        {label}
+      </p>
+      <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-3xl">{value}</p>
+    </div>
+  );
+}
+
+function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <th
+      className={`px-6 py-3 ${align === 'right' ? 'text-right' : 'text-left'} font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase`}
+      style={{ color: 'var(--lr-gold-soft)' }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function ModalField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="lr-eyebrow block mb-1.5" style={{ color: 'var(--lr-gold-soft)' }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function ModalInput({
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-[10px] px-3 py-2 text-sm text-(--lr-pearl) placeholder:text-(--lr-lavender-dust) focus:outline-none focus:border-(--lr-gold)"
+      style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
+    />
   );
 }

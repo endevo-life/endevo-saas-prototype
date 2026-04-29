@@ -245,10 +245,10 @@ export default function EmployeeDashboard() {
   const path = buildPath(progress);
   const nextDomain = path.find((d) => d.status === 'active') ?? path.find((d) => d.status === 'available');
 
-  const goToLesson = (id: string) => router.push(`/employee/modules/${id}`);
+  const goToLesson = (id: string) => router.push(`/org/member/modules/${id}`);
 
   return (
-    <DashboardLayout title="Your Legacy Path" role="employee">
+    <DashboardLayout title="Your Legacy Path" role="org_member">
       {/* Hero — band + score + gamified stats */}
       <section
         className="relative overflow-hidden rounded-[18px] mb-8 px-8 py-9"
@@ -334,7 +334,7 @@ export default function EmployeeDashboard() {
               Choose where to go next
             </h3>
           </div>
-          <button onClick={() => router.push('/employee/path')} className="lr-btn-outline" style={{ color: 'var(--lr-gold)' }}>
+          <button onClick={() => router.push('/org/member/path')} className="lr-btn-outline" style={{ color: 'var(--lr-gold)' }}>
             Open immersive path →
           </button>
         </div>
@@ -537,7 +537,7 @@ export default function EmployeeDashboard() {
             {state.nextActions.map((a, idx) => (
               <button
                 key={a.taskId}
-                onClick={() => router.push(`/employee/modules/${a.domain.toLowerCase()}`)}
+                onClick={() => router.push(`/org/member/modules/${a.domain.toLowerCase()}`)}
                 className="w-full flex items-center gap-4 px-4 py-3 rounded-[10px] text-left transition-all hover:bg-white/[0.03]"
                 style={{ border: '1px solid transparent' }}
               >

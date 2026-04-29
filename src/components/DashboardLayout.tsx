@@ -10,7 +10,7 @@ import LRMonogram from '@/components/common/LRMonogram';
 interface DashboardLayoutProps {
   children: ReactNode;
   title: string;
-  role: 'super_admin' | 'hr_admin' | 'employee';
+  role: 'super_admin' | 'org_admin' | 'org_member';
 }
 
 export default function DashboardLayout({ children, title, role }: DashboardLayoutProps) {
@@ -24,9 +24,9 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
     if (!user) {
       router.push('/');
     } else if (user.role !== role) {
-      if (user.role === 'super_admin') router.push('/admin/dashboard');
-      else if (user.role === 'hr_admin') router.push('/hr/dashboard');
-      else if (user.role === 'employee') router.push('/employee/dashboard');
+      if (user.role === 'super_admin') router.push('/superadmin/dashboard');
+      else if (user.role === 'org_admin') router.push('/org/admin/dashboard');
+      else if (user.role === 'org_member') router.push('/org/member/dashboard');
     }
   }, [user, role, router]);
 
@@ -41,29 +41,26 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
     switch (role) {
       case 'super_admin':
         return [
-          { label: 'Dashboard', path: '/admin/dashboard' },
-          { label: 'Organizations', path: '/admin/organizations' },
-          { label: 'Users', path: '/admin/users' },
-          { label: 'Analytics', path: '/admin/analytics' },
-          { label: 'Settings', path: '/admin/settings' },
+          { label: 'Dashboard', path: '/superadmin/dashboard' },
+          { label: 'Organizations', path: '/superadmin/organizations' },
+          { label: 'Users', path: '/superadmin/users' },
+          { label: 'Analytics', path: '/superadmin/analytics' },
+          { label: 'Settings', path: '/superadmin/settings' },
         ];
-      case 'hr_admin':
+      case 'org_admin':
         return [
-          { label: 'Dashboard', path: '/hr/dashboard' },
-          { label: 'Members', path: '/hr/employees' },
-          { label: 'Analytics', path: '/hr/analytics' },
-          { label: 'Reports', path: '/hr/reports' },
-          { label: 'Modules', path: '/hr/modules' },
-          { label: 'Settings', path: '/hr/settings' },
+          { label: 'Dashboard', path: '/org/admin/dashboard' },
+          { label: 'Members', path: '/org/admin/employees' },
+          { label: 'Analytics', path: '/org/admin/analytics' },
+          { label: 'Modules', path: '/org/admin/modules' },
+          { label: 'Settings', path: '/org/admin/settings' },
         ];
-      case 'employee':
+      case 'org_member':
         return [
-          { label: 'Today', path: '/employee/dashboard' },
-          { label: 'The Path', path: '/employee/path' },
-          { label: 'Progress', path: '/employee/progress' },
-          { label: 'My Learning', path: '/employee/learning' },
-          { label: 'Final Playbook', path: '/employee/certificates' },
-          { label: 'Profile', path: '/employee/profile' },
+          { label: 'Today', path: '/org/member/dashboard' },
+          { label: 'The Path', path: '/org/member/path' },
+          { label: 'Final Playbook', path: '/org/member/certificates' },
+          { label: 'Profile', path: '/org/member/profile' },
         ];
       default:
         return [];
@@ -78,7 +75,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
     : null;
 
   const roleLabel =
-    role === 'super_admin' ? 'Super Admin' : role === 'hr_admin' ? 'HR Admin' : 'Member';
+    role === 'super_admin' ? 'Super Admin' : role === 'org_admin' ? 'Org Admin' : 'Member';
 
   return (
     <div className="min-h-screen bg-(--lr-midnight) text-(--lr-pearl)">

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { Italiana, Jura, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Playfair_Display, Jura, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/common/Toast";
 
-const italiana = Italiana({
+// Display serif — Playfair Display replaces Italiana for readability.
+// Variable name kept as --font-italiana to avoid touching 59 references.
+const italiana = Playfair_Display({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["500", "600", "700"],
   variable: "--font-italiana",
   display: "swap",
 });

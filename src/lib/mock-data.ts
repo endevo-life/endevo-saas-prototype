@@ -1,6 +1,6 @@
 // Mock data for demo purposes - No real backend
 
-export type UserRole = 'super_admin' | 'hr_admin' | 'employee';
+export type UserRole = 'super_admin' | 'org_admin' | 'org_member';
 
 export interface User {
   id: string;
@@ -30,7 +30,7 @@ export interface Employee {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'employee' | 'hr_admin';
+  role: 'org_member' | 'org_admin';
   status: 'active' | 'inactive';
   onboardedAt: string | null;
   lastLoginAt: string | null;
@@ -79,19 +79,19 @@ export const mockUsers: User[] = [
     role: 'super_admin',
   },
   {
-    id: 'hr-1',
+    id: 'org-admin-1',
     email: 'jennifer.chen@xyzcompany.com',
     firstName: 'Jennifer',
     lastName: 'Chen',
-    role: 'hr_admin',
+    role: 'org_admin',
     organizationId: 'org-1',
   },
   {
-    id: 'hr-2',
+    id: 'org-admin-2',
     email: 'lisa.johnson@innovate.com',
     firstName: 'Lisa',
     lastName: 'Johnson',
-    role: 'hr_admin',
+    role: 'org_admin',
     organizationId: 'org-2',
   },
   {
@@ -99,7 +99,7 @@ export const mockUsers: User[] = [
     email: 'sarah.mitchell@xyzcompany.com',
     firstName: 'Sarah',
     lastName: 'Mitchell',
-    role: 'employee',
+    role: 'org_member',
     organizationId: 'org-1',
   },
   {
@@ -107,7 +107,7 @@ export const mockUsers: User[] = [
     email: 'marcus.reed@xyzcompany.com',
     firstName: 'Marcus',
     lastName: 'Reed',
-    role: 'employee',
+    role: 'org_member',
     organizationId: 'org-1',
   },
   {
@@ -115,7 +115,7 @@ export const mockUsers: User[] = [
     email: 'aisha.patel@xyzcompany.com',
     firstName: 'Aisha',
     lastName: 'Patel',
-    role: 'employee',
+    role: 'org_member',
     organizationId: 'org-1',
   },
 ];
@@ -162,7 +162,7 @@ export const mockEmployees: Employee[] = [
     email: 'sarah.mitchell@xyzcompany.com',
     firstName: 'Sarah',
     lastName: 'Mitchell',
-    role: 'employee',
+    role: 'org_member',
     status: 'active',
     onboardedAt: '2026-03-18T10:00:00Z',
     lastLoginAt: '2026-04-26T15:30:00Z',
@@ -178,7 +178,7 @@ export const mockEmployees: Employee[] = [
     email: 'marcus.reed@xyzcompany.com',
     firstName: 'Marcus',
     lastName: 'Reed',
-    role: 'employee',
+    role: 'org_member',
     status: 'active',
     onboardedAt: '2026-03-20T11:30:00Z',
     lastLoginAt: '2026-04-25T09:20:00Z',
@@ -194,7 +194,7 @@ export const mockEmployees: Employee[] = [
     email: 'david.kim@xyzcompany.com',
     firstName: 'David',
     lastName: 'Kim',
-    role: 'employee',
+    role: 'org_member',
     status: 'active',
     onboardedAt: '2026-03-22T14:00:00Z',
     lastLoginAt: '2026-04-22T16:45:00Z',
@@ -210,7 +210,7 @@ export const mockEmployees: Employee[] = [
     email: 'aisha.patel@xyzcompany.com',
     firstName: 'Aisha',
     lastName: 'Patel',
-    role: 'employee',
+    role: 'org_member',
     status: 'active',
     onboardedAt: '2026-04-26T08:00:00Z',
     lastLoginAt: null,

@@ -1,5 +1,5 @@
 // Assessment Questions Configuration
-// This can be managed by HR/Super Admin through the admin panel
+// This can be managed by Org Admin / Super Admin through the admin panel
 
 export interface AssessmentQuestion {
   id: string;

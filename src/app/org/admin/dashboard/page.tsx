@@ -23,7 +23,7 @@ export default function HRDashboard() {
 
   const organization = mockOrganizations.find((o) => o.id === user?.organizationId);
   const orgEmployees = mockEmployees.filter(
-    (e) => e.organizationId === user?.organizationId && e.role === 'employee'
+    (e) => e.organizationId === user?.organizationId && e.role === 'org_member'
   );
 
   const totalEmployees = orgEmployees.length;
@@ -49,7 +49,7 @@ export default function HRDashboard() {
   ];
 
   return (
-    <DashboardLayout title="Cohort Readiness" role="hr_admin">
+    <DashboardLayout title="Cohort Readiness" role="org_admin">
       {/* Privacy banner */}
       <div
         className="rounded-[14px] mb-6 px-5 py-4"
@@ -84,7 +84,7 @@ export default function HRDashboard() {
             {totalEmployees} active members · Enterprise tier
           </p>
         </div>
-        <button onClick={() => router.push('/hr/analytics')} className="lr-btn-primary">
+        <button onClick={() => router.push('/org/admin/analytics')} className="lr-btn-primary">
           Open analytics →
         </button>
       </div>
@@ -177,7 +177,7 @@ export default function HRDashboard() {
           title="Member roster"
           body="See progress per member, filter by department, watch the cohort grow."
           cta="View roster"
-          onClick={() => router.push('/hr/employees')}
+          onClick={() => router.push('/org/admin/employees')}
         />
         <ActionCard
           eyebrow="Engagement"

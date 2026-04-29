@@ -12,11 +12,11 @@ export default function NotFound() {
     if (user) {
       // Redirect based on role
       if (user.role === 'super_admin') {
-        router.push('/admin/dashboard');
-      } else if (user.role === 'hr_admin') {
-        router.push('/hr/dashboard');
-      } else if (user.role === 'employee') {
-        router.push('/employee/dashboard');
+        router.push('/superadmin/dashboard');
+      } else if (user.role === 'org_admin') {
+        router.push('/org/admin/dashboard');
+      } else if (user.role === 'org_member') {
+        router.push('/org/member/dashboard');
       }
     } else {
       router.push('/');
@@ -103,39 +103,39 @@ export default function NotFound() {
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               {user && (
                 <>
-                  {user.role === 'employee' && (
+                  {user.role === 'org_member' && (
                     <>
                       <button
-                        onClick={() => router.push('/employee/dashboard')}
+                        onClick={() => router.push('/org/member/dashboard')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                       >
                         📊 Dashboard
                       </button>
                       <button
-                        onClick={() => router.push('/employee/progress')}
+                        onClick={() => router.push('/org/member/certificates')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        📈 Progress
+                        ★ Final Playbook
                       </button>
                     </>
                   )}
-                  {user.role === 'hr_admin' && (
+                  {user.role === 'org_admin' && (
                     <>
                       <button
-                        onClick={() => router.push('/hr/dashboard')}
+                        onClick={() => router.push('/org/admin/dashboard')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        📊 HR Dashboard
+                        📊 Org Admin Dashboard
                       </button>
                     </>
                   )}
                   {user.role === 'super_admin' && (
                     <>
                       <button
-                        onClick={() => router.push('/admin/dashboard')}
+                        onClick={() => router.push('/superadmin/dashboard')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        📊 Admin Dashboard
+                        📊 Super Admin Dashboard
                       </button>
                     </>
                   )}

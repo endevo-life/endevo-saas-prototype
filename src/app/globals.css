@@ -102,7 +102,7 @@ h1, h2, h3, h4 {
   color: var(--text-primary);
 }
 
-.font-display { font-family: var(--font-display); letter-spacing: 0.06em; }
+.font-display { font-family: var(--font-display); letter-spacing: 0.01em; font-weight: 600; }
 .font-label   { font-family: var(--font-label); letter-spacing: 0.04em; }
 .font-body    { font-family: var(--font-body); }
 .font-mono    { font-family: var(--font-mono); }
@@ -159,11 +159,11 @@ h1, h2, h3, h4 {
   color: var(--lr-steel);
 }
 
-/* Display heading — Italiana, used for hero / brand name */
+/* Display heading — Playfair Display, used for hero / brand name */
 .lr-display {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--brand-primary);
 }
 

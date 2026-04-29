@@ -41,7 +41,7 @@ export default function AdminDashboard() {
               All organizations
             </h2>
           </div>
-          <button onClick={() => router.push('/admin/organizations')} className="lr-btn-primary">
+          <button onClick={() => router.push('/superadmin/organizations')} className="lr-btn-primary">
             Manage tenants →
           </button>
         </div>
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
                   </Td>
                   <Td align="right">
                     <button
-                      onClick={() => router.push(`/admin/organizations`)}
+                      onClick={() => router.push(`/superadmin/organizations`)}
                       className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-gold) hover:text-(--lr-gold-pale) mr-4"
                     >
                       View
@@ -134,21 +134,21 @@ export default function AdminDashboard() {
           eyebrow="Onboarding"
           title="Add a new tenant"
           body="Provision a new employer organization with admin invites and default modules."
-          onClick={() => router.push('/admin/organizations')}
+          onClick={() => router.push('/superadmin/organizations')}
           cta="Open organizations"
         />
         <ActionCard
           eyebrow="Identity"
           title="Manage platform users"
-          body="View HR admins and members across every tenant. Filter, search, audit access."
-          onClick={() => router.push('/admin/users')}
+          body="View Org admins and members across every tenant. Filter, search, audit access."
+          onClick={() => router.push('/superadmin/users')}
           cta="Open users"
         />
         <ActionCard
           eyebrow="Insight"
           title="Cross-tenant analytics"
           body="Compare engagement, completions and band distribution across all customers."
-          onClick={() => router.push('/admin/analytics')}
+          onClick={() => router.push('/superadmin/analytics')}
           cta="Open analytics"
         />
       </div>

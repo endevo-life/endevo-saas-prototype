@@ -13,7 +13,7 @@ interface Persona {
   context: string;
   blurb: string;
   badge?: string;
-  variant: 'employee' | 'hr' | 'admin';
+  variant: 'member' | 'org_admin' | 'super_admin';
   metric?: { label: string; value: string };
 }
 
@@ -22,11 +22,11 @@ const PERSONAS: Persona[] = [
     email: 'jennifer.chen@xyzcompany.com',
     firstName: 'Jennifer',
     lastName: 'Chen',
-    roleLabel: 'HR Admin',
+    roleLabel: 'Org Admin',
     context: 'XYZ Company',
     blurb: 'Aggregated readiness analytics across her workforce. Privacy-first — never sees individual answers.',
-    badge: 'Demo · HR Admin view',
-    variant: 'hr',
+    badge: 'Demo · Org Admin view',
+    variant: 'org_admin',
     metric: { label: 'Members', value: '4 of 4' },
   },
   {
@@ -36,7 +36,7 @@ const PERSONAS: Persona[] = [
     roleLabel: 'Member · Advanced',
     context: 'Caregiver Solutions, XYZ Company',
     blurb: 'Mid-journey through her Legacy Path. Three of four domains active, Final Playbook within reach.',
-    variant: 'employee',
+    variant: 'member',
     metric: { label: 'Readiness', value: '78%' },
   },
   {
@@ -46,7 +46,7 @@ const PERSONAS: Persona[] = [
     roleLabel: 'Member · In Progress',
     context: 'Chronic Disease, XYZ Company',
     blurb: 'Working through Financial domain. Streak of 4 days. Demonstrates the gamified middle of the path.',
-    variant: 'employee',
+    variant: 'member',
     metric: { label: 'Readiness', value: '35%' },
   },
   {
@@ -56,7 +56,7 @@ const PERSONAS: Persona[] = [
     roleLabel: 'Member · Day One',
     context: 'Caregiver Solutions, XYZ Company',
     blurb: 'Brand-new member. Sees onboarding, assessment, and the moment she earns her first XP.',
-    variant: 'employee',
+    variant: 'member',
     metric: { label: 'Readiness', value: '0%' },
   },
   {
@@ -66,7 +66,7 @@ const PERSONAS: Persona[] = [
     roleLabel: 'Super Admin',
     context: 'Endevo Platform',
     blurb: 'Multi-tenant view across every employer running Legacy Readiness OS — XYZ Company, Innovate Labs, Northstar.',
-    variant: 'admin',
+    variant: 'super_admin',
     metric: { label: 'Tenants', value: '3 active' },
   },
 ];
@@ -79,9 +79,9 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'super_admin') router.push('/admin/dashboard');
-      else if (user.role === 'hr_admin') router.push('/hr/dashboard');
-      else if (user.role === 'employee') router.push('/employee/dashboard');
+      if (user.role === 'super_admin') router.push('/superadmin/dashboard');
+      else if (user.role === 'org_admin') router.push('/org/admin/dashboard');
+      else if (user.role === 'org_member') router.push('/org/member/dashboard');
     }
   }, [user, router]);
 
@@ -91,9 +91,9 @@ export default function Home() {
   };
 
   const accentByVariant: Record<Persona['variant'], string> = {
-    hr: 'var(--lr-gold)',
-    employee: 'var(--lr-gold-pale)',
-    admin: 'var(--lr-pearl)',
+    org_admin: 'var(--lr-gold)',
+    member: 'var(--lr-gold-pale)',
+    super_admin: 'var(--lr-pearl)',
   };
 
   return (
