@@ -13,12 +13,30 @@ interface DashboardLayoutProps {
   role: 'super_admin' | 'org_admin' | 'org_member';
 }
 
+type ThemeMode = 'dark' | 'light';
+
 export default function DashboardLayout({ children, title, role }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>('dark');
+
+  // Hydrate theme from localStorage and apply to body
+  useEffect(() => {
+    const saved = (typeof window !== 'undefined' && localStorage.getItem('lr_theme')) as ThemeMode | null;
+    const mode: ThemeMode = saved === 'light' || saved === 'dark' ? saved : 'dark';
+    setTheme(mode);
+    document.body.setAttribute('data-theme', mode);
+  }, []);
+
+  const toggleTheme = () => {
+    const next: ThemeMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lr_theme', next);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -110,6 +128,26 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           </div>
 
           <div className="flex items-center space-x-3">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors"
+            >
+              {theme === 'dark' ? (
+                /* Sun — click to go light */
+                <svg className="w-5 h-5 text-(--lr-gold)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="4" strokeWidth={1.6} />
+                  <path strokeLinecap="round" strokeWidth={1.6} d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4" />
+                </svg>
+              ) : (
+                /* Moon — click to go dark */
+                <svg className="w-5 h-5 text-(--lr-gold)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+
             <button className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors relative">
               <svg className="w-5 h-5 text-(--lr-pearl)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

@@ -84,6 +84,68 @@ body[data-surface="light"] {
 }
 
 /* ============================================
+   LIGHT THEME — full toggle
+   Re-anchors the LR tokens so every component
+   that reads var(--lr-pearl), var(--lr-midnight),
+   etc. flips to dark-on-light without a refactor.
+   ============================================ */
+body[data-theme="light"] {
+  /* Surfaces — flip the dark stack to ivory/pearl/white */
+  --lr-midnight:   #FCFAF5;   /* page background */
+  --lr-navy-deep:  #FFFFFF;   /* card face */
+  --lr-navy-mid:   #F4F0E6;   /* elevated surface */
+  --lr-steel:      #485880;   /* mid-dark blue — unchanged, reads on both */
+
+  /* Text — DARK on light (preference: dark text) */
+  --lr-pearl:         #1C2644;   /* was light text, now navy-deep */
+  --lr-lavender-dust: #5F5A64;   /* muted text — warm slate */
+
+  /* Accents — slightly darker gold so it earns its place on white */
+  --lr-gold:      #8C7547;
+  --lr-gold-soft: #6E5B36;
+  --lr-gold-pale: #B89A66;
+
+  /* Re-bind semantic surfaces */
+  --background:           var(--lr-midnight);
+  --background-secondary: var(--lr-navy-deep);
+  --surface:              var(--lr-navy-deep);
+  --surface-elevated:     #F0EBDC;
+  --foreground:           var(--lr-pearl);
+
+  /* Text semantic — primary headings stay gold (darkened),
+     body becomes navy-deep */
+  --text-primary:   var(--lr-gold);
+  --text-secondary: var(--lr-pearl);
+  --text-muted:     var(--lr-warm-slate);
+
+  /* Borders — flip from gold-on-dark to dark-on-light */
+  --border-subtle: rgba(28, 38, 68, 0.10);
+  --border-gold:   rgba(140, 117, 71, 0.55);
+}
+
+/* Light-theme scrollbar — keep brand-aware */
+body[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #ECE6D6;
+}
+body[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--lr-gold-pale);
+}
+body[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--lr-gold);
+}
+
+/* Light-theme primary button — gold stays the action color, but on
+   white we boost contrast: solid darker gold with ivory text. */
+body[data-theme="light"] .lr-btn-primary {
+  background: var(--lr-gold);
+  color: var(--lr-ivory);
+  border-color: var(--lr-gold);
+}
+body[data-theme="light"] .lr-btn-primary:hover {
+  background: var(--lr-gold-soft);
+}
+
+/* ============================================
    Base
    ============================================ */
 

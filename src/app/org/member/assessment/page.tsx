@@ -4,296 +4,584 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
-import Button from '@/components/common/Button';
-import RadioOption from '@/components/common/RadioOption';
-import ProgressBar from '@/components/common/ProgressBar';
-import PrivacyNote from '@/components/common/PrivacyNote';
-import { assessmentQuestions, calculateAssessmentScore, assignModulesFromScore } from '@/lib/assessment-data';
+import LRMonogram from '@/components/common/LRMonogram';
+import {
+  ASSESSMENT_DOMAINS,
+  AssessmentDomain,
+  assessmentQuestions,
+  assignModulesFromScore,
+  calculateAssessmentScore,
+  calculateDomainScore,
+  getDomainProgress,
+  getQuestionsForDomain,
+} from '@/lib/assessment-data';
 import { mockModules } from '@/lib/mock-data';
+
+type View = 'picker' | 'questions' | 'results';
 
 export default function AssessmentPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  const [view, setView] = useState<View>('picker');
+  const [activeDomain, setActiveDomain] = useState<AssessmentDomain | null>(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [showResults, setShowResults] = useState(false);
 
-  const currentQuestion = assessmentQuestions[currentQuestionIndex];
+  const totalAnswered = Object.keys(answers).length;
   const totalQuestions = assessmentQuestions.length;
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
-  const currentAnswer = answers[currentQuestion.id];
+  const allComplete = ASSESSMENT_DOMAINS.every((d) => getDomainProgress(d.id, answers).complete);
 
-  // Welcome screen before starting assessment
-  if (showWelcome) {
-    return (
-      <DashboardLayout title="Welcome" role="org_member">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-6 text-white">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">👋</div>
-              <h1 className="text-3xl font-bold mb-2">Welcome to ENDevo!</h1>
-              <p className="text-blue-100">Your Legacy Readiness Journey Starts Here</p>
-            </div>
-          </div>
+  /* ──────────── handlers ──────────── */
 
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Let's Get Started</h2>
-            <p className="text-gray-600 mb-6">
-              We'll begin with a quick {totalQuestions}-question assessment to understand your current legacy readiness.
-              Based on your answers, we'll create a personalized learning path with videos and resources
-              tailored specifically for you.
-            </p>
-
-            <div className="bg-blue-50 rounded-lg p-6 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">What to Expect:</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <span className="text-blue-600 text-xl">📝</span>
-                  <div>
-                    <strong className="text-gray-900">Step 1: Assessment</strong>
-                    <p className="text-gray-600 text-sm">Answer {totalQuestions} simple questions about your legacy planning</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-green-600 text-xl">🎯</span>
-                  <div>
-                    <strong className="text-gray-900">Step 2: Personalized Path</strong>
-                    <p className="text-gray-600 text-sm">Get customized learning modules with videos and documents</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-purple-600 text-xl">📚</span>
-                  <div>
-                    <strong className="text-gray-900">Step 3: Learn at Your Pace</strong>
-                    <p className="text-gray-600 text-sm">Complete modules with videos, readings, and actionable steps</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-orange-600 text-xl">🏆</span>
-                  <div>
-                    <strong className="text-gray-900">Step 4: Compile your Final Playbook</strong>
-                    <p className="text-gray-600 text-sm">Each domain you complete adds a chapter to your private Final Playbook</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <PrivacyNote>
-              <p>
-                <strong>Your privacy is protected.</strong> Your answers and progress are completely private.
-                Only you can see your responses. Org admins only see completion status.
-              </p>
-            </PrivacyNote>
-
-            <div className="mt-8 flex gap-4">
-              <Button 
-                variant="primary" 
-                fullWidth 
-                onClick={() => setShowWelcome(false)}
-              >
-                Start Assessment →
-              </Button>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const handleAnswerChange = (value: string) => {
-    setAnswers({
-      ...answers,
-      [currentQuestion.id]: value,
-    });
+  const startDomain = (domain: AssessmentDomain) => {
+    const qs = getQuestionsForDomain(domain);
+    const firstUnansweredIdx = qs.findIndex((q) => !answers[q.id]);
+    setActiveDomain(domain);
+    setQuestionIndex(firstUnansweredIdx === -1 ? 0 : firstUnansweredIdx);
+    setView('questions');
   };
 
-  const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
+  const handleAnswer = (questionId: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleNext = () => {
-    if (!currentAnswer) return;
-
-    if (isLastQuestion) {
-      // Calculate score and show results
-      setShowResults(true);
+    if (!activeDomain) return;
+    const qs = getQuestionsForDomain(activeDomain);
+    if (questionIndex < qs.length - 1) {
+      setQuestionIndex((i) => i + 1);
     } else {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      // domain complete — return to picker
+      setActiveDomain(null);
+      setQuestionIndex(0);
+      setView('picker');
     }
   };
 
-  const handleComplete = () => {
+  const handleBack = () => {
+    if (questionIndex > 0) {
+      setQuestionIndex((i) => i - 1);
+    } else {
+      setActiveDomain(null);
+      setView('picker');
+    }
+  };
+
+  const handleSeeResults = () => setView('results');
+
+  const handleFinish = () => {
     const score = calculateAssessmentScore(answers);
     const assignedModules = assignModulesFromScore(score, answers);
-    
-    // Save to localStorage to simulate backend (in real app, save to backend)
     if (user) {
-      const assessmentData = {
-        userId: user.id,
-        score: score,
-        assignedModules: assignedModules,
-        completedAt: new Date().toISOString(),
-        answers: answers
-      };
-      localStorage.setItem(`assessment_${user.id}`, JSON.stringify(assessmentData));
-      
-      console.log('Assessment Score:', score);
-      console.log('Assigned Modules:', assignedModules);
+      localStorage.setItem(
+        `assessment_${user.id}`,
+        JSON.stringify({
+          userId: user.id,
+          score,
+          assignedModules,
+          completedAt: new Date().toISOString(),
+          answers,
+        })
+      );
     }
-    
-    // Redirect to dashboard
     router.push('/org/member/dashboard');
   };
 
-  if (showResults) {
-    const score = calculateAssessmentScore(answers);
-    const assignedModules = assignModulesFromScore(score, answers);
+  /* ──────────── RESULTS VIEW ──────────── */
+
+  if (view === 'results') {
+    const overallScore = calculateAssessmentScore(answers);
+    const assignedModules = assignModulesFromScore(overallScore, answers);
 
     return (
       <DashboardLayout title="Assessment Results" role="org_member">
-        <div className="max-w-3xl mx-auto">
-          {/* Results Card */}
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
-                <span className="text-4xl">✓</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Assessment Complete!</h1>
-              <p className="text-gray-600">Thank you for completing your Peace of Mind Assessment</p>
+        <div className="max-w-4xl mx-auto">
+          {/* Hero */}
+          <section
+            className="rounded-[18px] mb-7 px-8 py-9 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-gold)',
+            }}
+          >
+            <div className="pointer-events-none absolute -right-16 -top-16 opacity-15">
+              <LRMonogram size={260} />
             </div>
 
-            {/* Score Display */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-8 mb-8">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-700 mb-2">Your Readiness Score</p>
-                <p className="text-6xl font-bold text-blue-600 mb-2">{score}</p>
-                <p className="text-sm text-gray-600">out of 100</p>
+            <div className="relative grid lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
+              <div>
+                <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+                  Your starting line
+                </p>
+                <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-4xl tracking-[0.06em] leading-tight">
+                  Assessment complete
+                </h2>
+                <p className="text-(--lr-pearl) mt-3 max-w-md leading-relaxed opacity-90">
+                  Your readiness across the four domains. Each domain you strengthen lifts the whole picture.
+                </p>
+              </div>
+
+              <div className="flex justify-center lg:justify-end">
+                <ScoreDial score={overallScore} size={200} />
               </div>
             </div>
+          </section>
 
-            {/* Assigned Modules */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Your Personalized Learning Path</h2>
-              <p className="text-gray-600 mb-4">
-                Based on your answers, we've created a customized learning path with {assignedModules.length} modules.
-                Each module includes videos, readings, and actionable steps.
-              </p>
+          {/* Per-domain dials */}
+          <section className="mb-8">
+            <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+              By domain
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] mb-5">
+              Where you stand
+            </h3>
 
-              <div className="space-y-3">
-                {assignedModules.map((moduleId, index) => {
-                  const module = mockModules.find(m => m.id === moduleId);
-                  return (
-                    <div key={moduleId} className="flex items-start p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200">
-                      <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-4">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-gray-900 mb-1">{module?.title || `Module ${moduleId.replace('module-', '')}`}</p>
-                        <p className="text-sm text-gray-600">{module?.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>🎥 Videos & Reading</span>
-                          <span>⏱️ {module?.estimatedTime}</span>
-                        </div>
-                      </div>
-                      <div className="ml-auto">
-                        <span className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
-                          ✓ Assigned
-                        </span>
-                      </div>
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+              {ASSESSMENT_DOMAINS.map((d) => {
+                const score = calculateDomainScore(d.id, answers);
+                return (
+                  <div
+                    key={d.id}
+                    className="rounded-[14px] p-6"
+                    style={{
+                      background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+                      border: '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    <div className="flex justify-center mb-4">
+                      <DomainDial pct={score} size={120} />
                     </div>
-                  );
-                })}
-              </div>
+                    <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.28em] uppercase text-center mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+                      {d.number}
+                    </p>
+                    <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.08em] text-center">
+                      {d.label}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
+          </section>
 
-            {/* Privacy Note */}
-            <PrivacyNote>
-              <p>
-                <strong>Your privacy is protected.</strong> Your detailed answers are private and only visible to you.
-                Org admins can only see that you completed the assessment, not your individual responses.
-              </p>
-            </PrivacyNote>
+          {/* Personalised modules */}
+          <section
+            className="rounded-[14px] p-7 mb-7"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+              Your path
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] mb-2">
+              Personalised lessons
+            </h3>
+            <p className="text-sm text-(--lr-pearl) opacity-85 mb-5 leading-relaxed">
+              Based on your answers, {assignedModules.length} lessons have been added to your Legacy Path.
+            </p>
 
-            {/* Action Button */}
-            <div className="mt-8">
-              <Button variant="primary" fullWidth onClick={handleComplete}>
-                Start Your Learning Journey →
-              </Button>
+            <div className="space-y-2">
+              {assignedModules.map((moduleId, index) => {
+                const module = mockModules.find((m) => m.id === moduleId);
+                return (
+                  <div
+                    key={moduleId}
+                    className="flex items-center gap-4 px-4 py-3 rounded-[10px]"
+                    style={{ background: 'rgba(212,190,148,0.04)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-(family-name:--font-jetbrains) text-sm flex-shrink-0"
+                      style={{ background: 'rgba(212,190,148,0.12)', color: 'var(--lr-gold)', border: '1px solid var(--border-gold)' }}
+                    >
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-(--lr-pearl) truncate">{module?.title ?? moduleId}</p>
+                      <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+                        {module?.estimatedTime ?? '—'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          </section>
+
+          {/* Privacy + finish */}
+          <div
+            className="rounded-[14px] px-6 py-5 flex items-start gap-4 mb-6"
+            style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+          >
+            <span className="text-(--lr-gold) leading-none mt-0.5 text-lg">◆</span>
+            <p className="text-sm text-(--lr-pearl) leading-relaxed opacity-90">
+              <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-[0.7rem] text-(--lr-gold) block mb-1">
+                Your answers stay yours
+              </span>
+              Your detailed responses are private. Org Admins only see that you completed the assessment, not what you answered.
+            </p>
           </div>
+
+          <button onClick={handleFinish} className="lr-btn-primary w-full">
+            Begin your Legacy Path →
+          </button>
         </div>
       </DashboardLayout>
     );
   }
 
+  /* ──────────── QUESTIONS VIEW ──────────── */
+
+  if (view === 'questions' && activeDomain) {
+    const qs = getQuestionsForDomain(activeDomain);
+    const currentQ = qs[questionIndex];
+    const domain = ASSESSMENT_DOMAINS.find((d) => d.id === activeDomain)!;
+    const currentAnswer = answers[currentQ.id];
+    const isLastInDomain = questionIndex === qs.length - 1;
+    const progress = ((questionIndex + 1) / qs.length) * 100;
+
+    return (
+      <DashboardLayout title="Peace of Mind Assessment" role="org_member">
+        <div className="max-w-3xl mx-auto">
+          {/* Domain header strip */}
+          <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <button
+              onClick={() => {
+                setActiveDomain(null);
+                setView('picker');
+              }}
+              className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) hover:text-(--lr-gold) transition-colors"
+            >
+              ← Back to domains
+            </button>
+            <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-lavender-dust)">
+              Question {questionIndex + 1} of {qs.length}
+            </p>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-1.5 rounded-full mb-7" style={{ background: 'rgba(212,190,148,0.12)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${progress}%`, background: 'var(--lr-gold)' }}
+            />
+          </div>
+
+          {/* Question card */}
+          <section
+            className="rounded-[18px] p-8 mb-6"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <div className="mb-6">
+              <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+                {domain.number} · {domain.label}
+              </p>
+              <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.04em] leading-tight">
+                {currentQ.questionText}
+              </h2>
+            </div>
+
+            <div className="space-y-2.5 mb-7">
+              {currentQ.options.map((option) => {
+                const selected = currentAnswer === option.value;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => handleAnswer(currentQ.id, option.value)}
+                    className="w-full text-left px-5 py-4 rounded-[12px] transition-all"
+                    style={{
+                      background: selected
+                        ? 'linear-gradient(180deg, rgba(212,190,148,0.18) 0%, rgba(212,190,148,0.06) 100%)'
+                        : 'rgba(212,190,148,0.04)',
+                      border: selected ? '1px solid var(--lr-gold)' : '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
+                        style={{
+                          background: selected ? 'var(--lr-gold)' : 'transparent',
+                          border: `1px solid ${selected ? 'var(--lr-gold)' : 'var(--border-gold)'}`,
+                        }}
+                      >
+                        {selected && (
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ background: 'var(--lr-navy-deep)' }}
+                          />
+                        )}
+                      </span>
+                      <span className="text-sm text-(--lr-pearl)">{option.label}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button onClick={handleBack} className="lr-btn-outline" style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}>
+                ← Back
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={!currentAnswer}
+                className="lr-btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isLastInDomain ? 'Finish domain →' : 'Next →'}
+              </button>
+            </div>
+          </section>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  /* ──────────── PICKER (default landing) ──────────── */
+
   return (
     <DashboardLayout title="Peace of Mind Assessment" role="org_member">
-      <div className="max-w-3xl mx-auto">
-        {/* Progress Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Peace of Mind Assessment</h1>
-          <p className="text-gray-600 mb-4">
-            This helps us create a personalized learning path for your legacy readiness journey
-          </p>
-          <ProgressBar
-            current={currentQuestionIndex + 1}
-            total={totalQuestions}
-            color="gold"
-            size="lg"
-          />
-        </div>
+      <div className="max-w-5xl mx-auto">
+        {/* Hero */}
+        <section
+          className="rounded-[18px] mb-7 px-8 py-8 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+            border: '1px solid var(--border-gold)',
+          }}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 opacity-15">
+            <LRMonogram size={240} />
+          </div>
 
-        {/* Question Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-500 mb-2">
-              Question {currentQuestionIndex + 1} of {totalQuestions}
+          <div className="relative">
+            <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+              Begin your assessment
             </p>
-            <h2 className="text-2xl font-bold text-gray-900">{currentQuestion.questionText}</h2>
-          </div>
+            <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-4xl tracking-[0.05em] leading-tight max-w-2xl">
+              Choose where to begin, {user?.firstName ?? 'friend'}
+            </h2>
+            <p className="text-(--lr-pearl) mt-3 max-w-2xl leading-relaxed opacity-90">
+              Four domains shape your Legacy Path. Take them in any order — pause and return whenever the moment is right.
+              Each domain takes only a few minutes.
+            </p>
 
-          {/* Answer Options */}
-          <div className="space-y-3 mb-8">
-            {currentQuestion.options.map((option) => (
-              <RadioOption
-                key={option.id}
-                value={option.value}
-                selected={currentAnswer === option.value}
-                onChange={handleAnswerChange}
-              >
-                {option.label}
-              </RadioOption>
-            ))}
-          </div>
+            <div className="mt-5 flex items-center gap-5 flex-wrap">
+              <div className="flex items-baseline gap-2">
+                <span className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-2xl">
+                  {totalAnswered}
+                </span>
+                <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust)">
+                  / {totalQuestions} answered
+                </span>
+              </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentQuestionIndex === 0}
-            >
-              ← Back
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleNext}
-              disabled={!currentAnswer}
-            >
-              {isLastQuestion ? 'Complete Assessment' : 'Next →'}
-            </Button>
+              {allComplete && (
+                <button onClick={handleSeeResults} className="lr-btn-primary">
+                  See your results →
+                </button>
+              )}
+            </div>
           </div>
+        </section>
+
+        {/* Four domain cards */}
+        <section>
+          <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+            The four domains
+          </p>
+          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] mb-5">
+            Pick a domain to begin
+          </h3>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {ASSESSMENT_DOMAINS.map((d) => {
+              const { answered, total, complete } = getDomainProgress(d.id, answers);
+              const inProgress = answered > 0 && !complete;
+              const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => total > 0 && startDomain(d.id)}
+                  disabled={total === 0}
+                  className="text-left rounded-[14px] p-6 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+                    border: complete
+                      ? '1px solid var(--lr-gold)'
+                      : inProgress
+                      ? '1px solid var(--border-gold)'
+                      : '1px solid var(--border-subtle)',
+                    boxShadow: complete ? '0 14px 36px -22px rgba(212,190,148,0.45)' : 'none',
+                  }}
+                >
+                  {/* Concentric ring node */}
+                  <div className="flex justify-center mb-5">
+                    <DomainNode pct={pct} status={complete ? 'complete' : inProgress ? 'active' : 'available'} size={120} />
+                  </div>
+
+                  <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.28em] uppercase mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+                    {d.number}
+                  </p>
+                  <p className="font-(family-name:--font-italiana) text-2xl text-(--lr-gold) tracking-[0.08em] mb-2">
+                    {d.label}
+                  </p>
+                  <p className="text-xs text-(--lr-pearl) leading-relaxed opacity-80 mb-4 min-h-[2.5em]">
+                    {d.blurb}
+                  </p>
+
+                  <hr className="lr-separator mb-4" />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-(family-name:--font-jetbrains) text-(--lr-pearl)">
+                      {answered}/{total} questions
+                    </span>
+                    <span
+                      className="font-(family-name:--font-jura) tracking-[0.18em] uppercase text-[0.62rem]"
+                      style={{
+                        color: complete
+                          ? 'var(--lr-gold)'
+                          : inProgress
+                          ? 'var(--lr-gold-pale)'
+                          : 'var(--lr-lavender-dust)',
+                      }}
+                    >
+                      {complete ? '✓ Complete' : inProgress ? 'In progress' : 'Not started'}
+                    </span>
+                  </div>
+
+                  <p className="text-[0.7rem] text-(--lr-gold-soft) mt-3 leading-relaxed">
+                    {complete
+                      ? 'Review your answers'
+                      : inProgress
+                      ? 'Continue where you left off'
+                      : total === 0
+                      ? 'Coming soon'
+                      : 'Start this domain →'}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Privacy footer */}
+        <div
+          className="mt-8 rounded-[14px] px-6 py-5 flex items-start gap-4"
+          style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+        >
+          <span className="text-(--lr-gold) leading-none mt-0.5 text-lg">◆</span>
+          <p className="text-sm text-(--lr-pearl) leading-relaxed opacity-90">
+            <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-[0.7rem] text-(--lr-gold) block mb-1">
+              Private by design
+            </span>
+            Only you see your answers. Org Admins see only that you completed the assessment — never your individual responses.
+          </p>
         </div>
-
-        {/* Privacy Note */}
-        <PrivacyNote>
-          <strong>Privacy Note:</strong> Your answers are private and secure. Org Admins only see completion status,
-          not your individual responses.
-        </PrivacyNote>
       </div>
     </DashboardLayout>
+  );
+}
+
+/* ──────────── Visual primitives ──────────── */
+
+function ScoreDial({ score, size = 200 }: { score: number; size?: number }) {
+  const stroke = 7;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (score / 100) * c;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      <circle cx={size / 2} cy={size / 2} r={r + 4} fill="none" stroke="var(--lr-steel)" strokeOpacity="0.25" strokeWidth="0.5" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(212,190,148,0.16)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r}
+        fill="none"
+        stroke="var(--lr-gold)"
+        strokeWidth={stroke}
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: 'stroke-dashoffset 1s ease' }}
+      />
+      <text x="50%" y="42%" textAnchor="middle" fill="var(--lr-pearl)" fontFamily="var(--font-jura)" fontSize={size * 0.06} letterSpacing="0.22em">
+        READINESS
+      </text>
+      <text x="50%" y="57%" textAnchor="middle" fill="var(--lr-gold)" fontFamily="var(--font-mono)" fontSize={size * 0.22}>
+        {score}%
+      </text>
+    </svg>
+  );
+}
+
+function DomainDial({ pct, size = 120 }: { pct: number; size?: number }) {
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      <circle cx={size / 2} cy={size / 2} r={r + 2} fill="none" stroke="var(--lr-steel)" strokeOpacity="0.3" strokeWidth="0.6" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(212,190,148,0.18)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r}
+        fill="none"
+        stroke="var(--lr-gold)"
+        strokeWidth={stroke}
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+      />
+      <text x="50%" y="55%" textAnchor="middle" fill="var(--lr-gold)" fontFamily="var(--font-mono)" fontSize={size * 0.22} dominantBaseline="middle">
+        {pct}%
+      </text>
+    </svg>
+  );
+}
+
+function DomainNode({ pct, status, size = 120 }: { pct: number; status: 'complete' | 'active' | 'available'; size?: number }) {
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  const ringColor =
+    status === 'complete' ? 'var(--lr-gold)' :
+    status === 'active'   ? 'var(--lr-gold-pale)' :
+                            'var(--lr-lavender-dust)';
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      <circle cx={size / 2} cy={size / 2} r={r + 2} fill="none" stroke="var(--lr-steel)" strokeOpacity="0.3" strokeWidth="0.6" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(212,190,148,0.18)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r}
+        fill="none"
+        stroke={ringColor}
+        strokeWidth={stroke}
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+      />
+      <circle cx={size / 2} cy={size / 2} r={r - 9} fill="none" stroke="var(--lr-gold)" strokeOpacity="0.18" strokeWidth="0.6" />
+      {status === 'complete' ? (
+        <text x="50%" y="58%" textAnchor="middle" fill="var(--lr-gold)" fontFamily="var(--font-mono)" fontSize={size * 0.32} dominantBaseline="middle">
+          ✓
+        </text>
+      ) : (
+        <text x="50%" y="55%" textAnchor="middle" fill={ringColor} fontFamily="var(--font-mono)" fontSize={size * 0.22} dominantBaseline="middle">
+          {pct}%
+        </text>
+      )}
+    </svg>
   );
 }
