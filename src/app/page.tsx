@@ -85,6 +85,16 @@ export default function Home() {
     }
   }, [user, router]);
 
+  // Honor saved theme preference on landing too — otherwise the
+  // page would always render in dark even if the user picked light.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('lr_theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.body.setAttribute('data-theme', saved);
+    }
+  }, []);
+
   const handlePersonaClick = (persona: Persona) => {
     setPending(persona.email);
     login(persona.email);
@@ -101,7 +111,7 @@ export default function Home() {
       className="min-h-screen relative overflow-hidden"
       style={{
         background:
-          'radial-gradient(ellipse at top, #1F2A4D 0%, var(--lr-midnight) 55%, #0A0E20 100%)',
+          'radial-gradient(ellipse at top, var(--lr-navy-mid) 0%, var(--lr-midnight) 55%, var(--lr-navy-deep) 100%)',
       }}
     >
       {/* Decorative concentric rings — Eternal Geometry signature */}
@@ -191,13 +201,13 @@ export default function Home() {
                 className="group relative text-left rounded-[14px] p-6 transition-all duration-300 overflow-hidden"
                 style={{
                   background:
-                    'linear-gradient(180deg, rgba(42,58,98,0.65) 0%, rgba(28,38,68,0.85) 100%)',
+                    'linear-gradient(180deg, var(--lr-navy-mid) 0%, var(--lr-navy-deep) 100%)',
                   border: isHovered
                     ? '1px solid var(--lr-gold)'
-                    : '1px solid rgba(212,190,148,0.18)',
+                    : '1px solid var(--border-gold)',
                   boxShadow: isHovered
                     ? '0 24px 60px -28px rgba(212,190,148,0.35)'
-                    : '0 12px 32px -22px rgba(0,0,0,0.6)',
+                    : '0 12px 32px -22px rgba(0,0,0,0.18)',
                   transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
                 }}
               >

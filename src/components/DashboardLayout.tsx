@@ -2,10 +2,15 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, ReactNode, useState } from 'react';
+import { useEffect, ReactNode, useState, useMemo } from 'react';
 import { mockOrganizations } from '@/lib/mock-data';
 import ChatWidget from '@/components/ChatWidget';
 import LRMonogram from '@/components/common/LRMonogram';
+import {
+  AppNotification,
+  SEVERITY_DOT,
+  getNotificationsForUser,
+} from '@/lib/notifications-data';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -22,6 +27,31 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const initialNotifications = useMemo<AppNotification[]>(
+    () => (user ? getNotificationsForUser(user.id) : []),
+    [user]
+  );
+  const [notifications, setNotifications] = useState<AppNotification[]>(initialNotifications);
+
+  useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleNotifClick = (n: AppNotification) => {
+    setNotifications((prev) => prev.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
+    if (n.actionRoute) {
+      setNotifOpen(false);
+      router.push(n.actionRoute);
+    }
+  };
 
   // Hydrate theme from localStorage and apply to body
   useEffect(() => {
@@ -149,12 +179,118 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
               )}
             </button>
 
-            <button className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors relative">
-              <svg className="w-5 h-5 text-(--lr-pearl)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-(--lr-gold) rounded-full" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen((o) => !o)}
+                aria-label="Notifications"
+                className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors relative"
+              >
+                <svg className="w-5 h-5 text-(--lr-pearl)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-(family-name:--font-jetbrains) text-[0.6rem]"
+                    style={{
+                      background: 'var(--lr-gold)',
+                      color: 'var(--lr-navy-deep)',
+                      border: '1px solid var(--lr-gold)',
+                    }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <>
+                  {/* Click-outside catcher */}
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={() => setNotifOpen(false)}
+                  />
+                  {/* Dropdown */}
+                  <div
+                    className="absolute right-0 top-full mt-2 w-[360px] max-w-[92vw] z-40 rounded-[14px] overflow-hidden flex flex-col"
+                    style={{
+                      background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+                      border: '1px solid var(--border-gold)',
+                      boxShadow: '0 24px 50px -18px rgba(0,0,0,0.55)',
+                      maxHeight: 'min(520px, 80vh)',
+                    }}
+                  >
+                    {/* Header */}
+                    <div
+                      className="px-5 py-3 flex items-center justify-between flex-shrink-0"
+                      style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                    >
+                      <div>
+                        <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-base tracking-[0.05em]">
+                          Notifications
+                        </p>
+                        <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase text-(--lr-gold-soft) mt-0.5">
+                          {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+                        </p>
+                      </div>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-gold) hover:text-(--lr-gold-pale) transition-colors"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* List */}
+                    <div className="flex-1 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-5 py-10 text-center">
+                          <p className="text-sm text-(--lr-pearl) opacity-80">No notifications yet.</p>
+                          <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust) mt-2">
+                            Activity will appear here
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            onClick={() => handleNotifClick(n)}
+                            className="w-full text-left px-5 py-4 transition-colors hover:bg-white/[0.03]"
+                            style={{
+                              borderTop: '1px solid var(--border-subtle)',
+                              borderLeft: n.read ? '3px solid transparent' : `3px solid ${SEVERITY_DOT[n.severity]}`,
+                              background: n.read ? 'transparent' : 'rgba(212,190,148,0.04)',
+                            }}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span
+                                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                                style={{ background: SEVERITY_DOT[n.severity] }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-(--lr-pearl) leading-snug">{n.title}</p>
+                                <p className="text-xs text-(--lr-lavender-dust) mt-1 leading-relaxed">{n.body}</p>
+                                <div className="flex items-center justify-between mt-2 gap-3">
+                                  <span className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.2em] uppercase text-(--lr-gold-soft)">
+                                    {relativeTime(n.timestamp)}
+                                  </span>
+                                  {n.actionLabel && (
+                                    <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold)">
+                                      {n.actionLabel} →
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             <div className="flex items-center space-x-3 pl-4 border-l border-(--border-subtle)">
               <div className="text-right hidden sm:block">
@@ -266,4 +402,18 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
       <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
+}
+
+function relativeTime(iso: string): string {
+  // Anchor "now" to the most recent notification timestamp so the demo
+  // shows coherent relative times regardless of when it's loaded.
+  const now = new Date('2026-04-30T10:00:00Z').getTime();
+  const t = new Date(iso).getTime();
+  const mins = Math.round((now - t) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  return `${days}d ago`;
 }

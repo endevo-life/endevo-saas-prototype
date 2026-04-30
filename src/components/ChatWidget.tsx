@@ -1,213 +1,304 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useState, useRef, useEffect } from 'react';
 
 interface ChatWidgetProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const INITIAL_GREETING: ChatMessage = {
+  role: 'assistant',
+  content:
+    "I'm Jesse — your guide through the Legacy Path. Ask me about the four domains, your readiness score, or how the Final Playbook compiles itself. I'm here when you're ready.",
+};
+
+const QUICK_QUESTIONS = [
+  'What does my readiness score mean?',
+  'How does the Final Playbook work?',
+  'What\'s the difference between domains?',
+  'Who can see my answers?',
+];
+
+const RESPONSE_LIBRARY: { match: string[]; reply: string }[] = [
+  {
+    match: ['readiness', 'score'],
+    reply:
+      'Your readiness score (0–1000) reflects how prepared your loved ones would be if something happened to you. It strengthens as you complete actions across the four domains. Each domain you touch lifts the whole picture.',
+  },
+  {
+    match: ['playbook', 'final', 'compile'],
+    reply:
+      'The Final Playbook compiles itself as you complete domains. Each domain you finish adds a chapter — Legal, Financial, Digital, Physical. The full document only exists once all four are complete, and it stays yours alone.',
+  },
+  {
+    match: ['domain', 'four', 'legal', 'financial', 'digital', 'physical'],
+    reply:
+      'Four domains shape the Legacy Path:\n• 01 LEGAL — will, executor, healthcare proxy\n• 02 FINANCIAL — accounts, beneficiaries, obligations\n• 03 DIGITAL — logins, devices, online identity\n• 04 PHYSICAL — belongings, ceremony, location of papers\n\nTake them in any order — the Path adapts to where you are.',
+  },
+  {
+    match: ['private', 'privacy', 'see', 'employer', 'admin'],
+    reply:
+      'Your answers, reflections, and Final Playbook are yours alone. Your Org Admin only sees that you completed something — never the contents. Endevo never sees your individual answers either.',
+  },
+  {
+    match: ['streak', 'shield', 'xp', 'level', 'badge'],
+    reply:
+      'Small daily moments build a streak. After 7 consecutive days you earn the Week One badge. Streak Shield protects one missed day so a busy week doesn\'t reset you. XP unlocks Levels (L1 Foundation → L4 Legacy) which gate the Letter Vault.',
+  },
+  {
+    match: ['letter', 'vault'],
+    reply:
+      'The Letter Vault holds sealed letters to your executor, partner, children, and future-self. They unlock as you complete the matching domain — a private moment of reflection earned by the work you\'ve already done.',
+  },
+];
+
 export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
-    { 
-      role: 'assistant', 
-      content: "Hi! I'm Jesse, your AI assistant. I can help you navigate the ENDevo platform, explain terms, and guide you through your learning journey. What would you like to know?" 
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-
-    const userMessage = inputMessage.trim();
-    setInputMessage('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsTyping(true);
-
-    // Simulate AI response (replace with actual AI integration)
-    setTimeout(() => {
-      const responses: { [key: string]: string } = {
-        'navigation': 'To navigate the platform, use the left sidebar menu. Click on Dashboard to see your overview, Progress Summary to track your learning, and My Learning to access your modules.',
-        'progress': 'Your progress is tracked automatically as you complete modules. You can view detailed progress reports by clicking "Progress Summary" in the sidebar.',
-        'modules': 'Modules are structured learning units. Each module contains 5 lessons with videos, reflection notes, and assessments. Complete all lessons to finish a module.',
-        'export': 'You can export your progress and module summaries anytime. Look for the "Export" or "Save PDF" buttons on the Progress Summary page.',
-        'terms': 'Common terms: Module = learning unit, Lesson = individual topic, Reflection = personal notes, Competency = skill area, Progress = completion percentage.',
-      };
-
-      let response = "I'm here to help! You can ask me about:\n\n• Navigation and using the platform\n• Understanding your progress\n• Module structure and lessons\n• Exporting reports\n• Common terms and concepts\n\nWhat specific topic would you like to know more about?";
-
-      // Simple keyword matching (replace with actual AI)
-      const lowerMessage = userMessage.toLowerCase();
-      for (const [key, value] of Object.entries(responses)) {
-        if (lowerMessage.includes(key)) {
-          response = value;
-          break;
-        }
-      }
-
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-      setIsTyping(false);
-    }, 1000);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const quickQuestions = [
-    "How do I navigate the platform?",
-    "What are modules?",
-    "How do I track my progress?",
-    "Can I export my results?",
-  ];
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   if (!isOpen) return null;
 
-  return (
-    <>
-      {/* Overlay */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
-        onClick={onClose}
-      />
+  const handleSend = (text?: string) => {
+    const userText = (text ?? inputMessage).trim();
+    if (!userText) return;
 
-      {/* Chat Widget */}
-      <div className="fixed bottom-4 right-4 w-96 bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200" style={{ height: '600px' }}>
-        {/* Header */}
-        <div 
-          className="p-4 text-white flex items-center justify-between"
-          style={{ 
-            background: 'linear-gradient(135deg, var(--endevo-open-seas) 0%, var(--endevo-deep-space) 100%)'
+    setInputMessage('');
+    setMessages((prev) => [...prev, { role: 'user', content: userText }]);
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const lower = userText.toLowerCase();
+      const matched = RESPONSE_LIBRARY.find((entry) => entry.match.some((m) => lower.includes(m)));
+      const reply =
+        matched?.reply ??
+        'I can help with the four domains, your readiness score, the Final Playbook, streaks and badges, the Letter Vault, or what\'s private vs visible to your Org Admin. What would you like to explore?';
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      setIsTyping(false);
+    }, 700);
+  };
+
+  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div
+      className="fixed bottom-4 right-4 z-50 flex flex-col overflow-hidden rounded-[16px]"
+      style={{
+        width: 'min(96vw, 400px)',
+        height: 'min(85vh, 620px)',
+        background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+        border: '1px solid var(--border-gold)',
+        boxShadow: '0 30px 60px -20px rgba(0,0,0,0.55)',
+      }}
+    >
+      {/* Header */}
+      <div
+        className="px-5 py-4 flex items-center justify-between flex-shrink-0"
+        style={{
+          background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-navy-deep) 100%)',
+          borderBottom: '1px solid var(--border-gold)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <JesseAvatar size={40} />
+          <div>
+            <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.06em] leading-tight">
+              Ask Jesse
+            </p>
+            <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) mt-0.5">
+              Your guide on the path
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close chat"
+          className="p-2 rounded-lg transition-colors"
+          style={{
+            background: 'rgba(212,190,148,0.08)',
+            color: 'var(--lr-gold)',
+            border: '1px solid var(--border-gold)',
           }}
         >
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Image 
-                src="/asset/jesse-image.png" 
-                alt="Jesse AI Assistant" 
-                width={48} 
-                height={48}
-                className="w-12 h-12 rounded-full border-2 border-white object-cover"
-              />
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></span>
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">Ask Jesse</h3>
-              <p className="text-xs text-white/80">AI Assistant • Online</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-1 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {messages.map((message, index) => (
-            <div 
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {message.role === 'assistant' && (
-                <Image 
-                  src="/asset/jesse-image.png" 
-                  alt="Jesse" 
-                  width={32} 
-                  height={32}
-                  className="w-8 h-8 rounded-full mr-2 object-cover shrink-0"
-                />
-              )}
-              <div 
-                className={`max-w-[75%] p-3 rounded-2xl ${
-                  message.role === 'user' 
-                    ? 'text-white' 
-                    : 'bg-white text-gray-800 border border-gray-200'
-                }`}
-                style={message.role === 'user' ? { 
-                  background: 'linear-gradient(135deg, var(--endevo-open-seas) 0%, var(--endevo-deep-space) 100%)'
-                } : {}}
-              >
-                <p className="text-sm whitespace-pre-line">{message.content}</p>
-              </div>
-            </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex justify-start">
-              <Image 
-                src="/asset/jesse-image.png" 
-                alt="Jesse" 
-                width={32} 
-                height={32}
-                className="w-8 h-8 rounded-full mr-2 object-cover"
-              />
-              <div className="bg-white p-3 rounded-2xl border border-gray-200">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {messages.map((message, idx) => {
+          const isUser = message.role === 'user';
+          return (
+            <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+              {!isUser && (
+                <div className="mr-2 flex-shrink-0">
+                  <JesseAvatar size={28} />
                 </div>
+              )}
+              <div
+                className="max-w-[78%] rounded-[12px] px-4 py-2.5"
+                style={
+                  isUser
+                    ? {
+                        background: 'var(--lr-gold)',
+                        color: 'var(--lr-navy-deep)',
+                        border: '1px solid var(--lr-gold)',
+                      }
+                    : {
+                        background: 'rgba(212,190,148,0.06)',
+                        color: 'var(--lr-pearl)',
+                        border: '1px solid var(--border-subtle)',
+                      }
+                }
+              >
+                <p className="text-sm whitespace-pre-line leading-relaxed">{message.content}</p>
               </div>
             </div>
-          )}
-        </div>
+          );
+        })}
 
-        {/* Quick Questions */}
-        {messages.length === 1 && (
-          <div className="px-4 py-2 bg-white border-t border-gray-200">
-            <p className="text-xs text-gray-500 mb-2">Quick questions:</p>
-            <div className="flex flex-wrap gap-2">
-              {quickQuestions.map((question, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setInputMessage(question);
-                  }}
-                  className="text-xs px-3 py-1.5 rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600 transition-colors"
-                >
-                  {question}
-                </button>
-              ))}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="mr-2 flex-shrink-0">
+              <JesseAvatar size={28} />
+            </div>
+            <div
+              className="rounded-[12px] px-4 py-3"
+              style={{
+                background: 'rgba(212,190,148,0.06)',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div className="flex space-x-1.5">
+                <Dot delay="0s" />
+                <Dot delay="0.15s" />
+                <Dot delay="0.3s" />
+              </div>
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
+      </div>
 
-        {/* Input Area */}
-        <div className="p-4 bg-white border-t border-gray-200">
-          <div className="flex items-end space-x-2">
-            <textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your question..."
-              rows={2}
-              className="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
-              className="px-4 py-2 rounded-lg text-white font-medium transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ 
-                backgroundColor: 'var(--endevo-open-seas)'
-              }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
+      {/* Quick questions — only on first turn */}
+      {messages.length === 1 && (
+        <div
+          className="px-4 py-3 flex-shrink-0"
+          style={{ borderTop: '1px solid var(--border-subtle)' }}
+        >
+          <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) mb-2">
+            Quick questions
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                onClick={() => handleSend(q)}
+                className="text-xs px-3 py-1.5 rounded-full transition-all"
+                style={{
+                  background: 'rgba(212,190,148,0.06)',
+                  color: 'var(--lr-pearl)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                {q}
+              </button>
+            ))}
           </div>
         </div>
+      )}
+
+      {/* Input */}
+      <div
+        className="px-4 py-3 flex-shrink-0"
+        style={{ borderTop: '1px solid var(--border-gold)' }}
+      >
+        <div className="flex items-end gap-2">
+          <textarea
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="Ask Jesse anything…"
+            rows={2}
+            className="flex-1 resize-none rounded-[10px] px-3 py-2 text-sm focus:outline-none transition-colors"
+            style={{
+              background: 'rgba(28,38,68,0.7)',
+              color: 'var(--lr-pearl)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          />
+          <button
+            onClick={() => handleSend()}
+            disabled={!inputMessage.trim()}
+            aria-label="Send message"
+            className="px-3 py-2.5 rounded-[10px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: 'var(--lr-gold)',
+              color: 'var(--lr-navy-deep)',
+              border: '1px solid var(--lr-gold)',
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 12l14-7-7 14-2-5-5-2z" />
+            </svg>
+          </button>
+        </div>
+        <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.18em] uppercase text-(--lr-lavender-dust) mt-2">
+          Demo · responses are illustrative
+        </p>
       </div>
-    </>
+    </div>
+  );
+}
+
+/* ──────────── primitives ──────────── */
+
+function JesseAvatar({ size }: { size: number }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center font-(family-name:--font-italiana) tracking-[0.05em]"
+      style={{
+        width: size,
+        height: size,
+        background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-midnight) 100%)',
+        color: 'var(--lr-gold)',
+        border: '1px solid var(--lr-gold)',
+        fontSize: size * 0.45,
+      }}
+    >
+      J
+    </div>
+  );
+}
+
+function Dot({ delay }: { delay: string }) {
+  return (
+    <span
+      className="w-1.5 h-1.5 rounded-full"
+      style={{
+        background: 'var(--lr-gold)',
+        animation: 'lr-bounce 1.2s infinite ease-in-out',
+        animationDelay: delay,
+      }}
+    />
   );
 }

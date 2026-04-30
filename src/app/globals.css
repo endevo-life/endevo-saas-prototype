@@ -348,6 +348,12 @@ h1, h2, h3, h4 {
   opacity: 0.3;
 }
 
+/* Typing dot bounce — used by ChatWidget */
+@keyframes lr-bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+  40%           { transform: translateY(-4px); opacity: 1;   }
+}
+
 /* Print-friendly */
 @media print {
   body { background: #FFFFFF; }
