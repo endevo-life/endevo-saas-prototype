@@ -63,6 +63,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           { label: 'Organizations', path: '/superadmin/organizations' },
           { label: 'Users', path: '/superadmin/users' },
           { label: 'Analytics', path: '/superadmin/analytics' },
+          { label: 'Audit Logs', path: '/superadmin/audit-logs' },
           { label: 'Settings', path: '/superadmin/settings' },
         ];
       case 'org_admin':
