@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockEmployees, mockProgress, mockModules } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
-import { LRColors } from '@/lib/theme';
 import { useToast } from '@/components/common/Toast';
+import { LRColors } from '@/lib/theme';
 import {
   BarChart,
   Bar,
@@ -22,15 +21,128 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
+/* ──────────── synthetic enterprise-scale data ────────────
+   Anchored to a 375-member workforce so the executive view
+   tells a coherent story for the Cigna HR demo.            */
+
+const cohortByDept = [
+  { dept: 'Finance',     total: 100, started: 78, completed: 32, protected: 32 },
+  { dept: 'Engineering', total: 85,  started: 71, completed: 38, protected: 38 },
+  { dept: 'Marketing',   total: 42,  started: 36, completed: 22, protected: 22 },
+  { dept: 'HR',          total: 28,  started: 24, completed: 19, protected: 19 },
+  { dept: 'Operations',  total: 65,  started: 41, completed: 18, protected: 18 },
+  { dept: 'Sales',       total: 55,  started: 28, completed: 12, protected: 12 },
+];
+
+const totalMembers   = cohortByDept.reduce((s, d) => s + d.total, 0);     // 375
+const totalStarted   = cohortByDept.reduce((s, d) => s + d.started, 0);   // 278
+const totalProtected = cohortByDept.reduce((s, d) => s + d.protected, 0); // 141
+
+const startedDelta   = 23; // this week
+const protectedDelta = 12; // this month
+
+// Funnel — the journey from invitation to Final Playbook
+const funnel = [
+  { label: 'Invited',                  count: 375 },
+  { label: 'Started Assessment',       count: 278 },
+  { label: 'Completed Assessment',     count: 211 },
+  { label: 'Started Action Plan',      count: 167 },
+  { label: 'Completed Action Plan',    count: 141 },
+  { label: 'Final Playbook ready',     count:  89 },
+];
+
+// Cohort completion — three-way split for the donut
+const completionData = [
+  { name: 'Complete',    value: 89,  color: LRColors.gold },
+  { name: 'In progress', value: 189, color: LRColors.steel },
+  { name: 'Not started', value: 97,  color: LRColors.lavenderDust },
+];
+
+// Per-dept × per-domain readiness (the grouped bar chart)
+const deptDomainReadiness = [
+  { dept: 'Finance',     legal: 64, financial: 80, digital: 50, physical: 28 },
+  { dept: 'Engineering', legal: 58, financial: 49, digital: 60, physical: 41 },
+  { dept: 'Marketing',   legal: 60, financial: 56, digital: 52, physical: 38 },
+  { dept: 'HR',          legal: 71, financial: 49, digital: 50, physical: 41 },
+  { dept: 'Operations',  legal: 50, financial: 38, digital: 40, physical: 30 },
+  { dept: 'Sales',       legal: 41, financial: 47, digital: 30, physical: 28 },
+];
+
+// Action items completed across the four domains
+const actionItems = {
+  total: 1847,
+  members: 142,
+  thisWeek: 18,
+  thisMonth: 72,
+  avgPerMember: 13,
+};
+
+// LMS lessons — completions split across the 6 LRos lesson topics
+const lmsTopics = [
+  { topic: 'Project Plan',   completions: 248, members: 124 },
+  { topic: 'Legal',          completions: 312, members: 168 },
+  { topic: 'Financial',      completions: 268, members: 134 },
+  { topic: 'Digital',        completions: 198, members:  98 },
+  { topic: 'Physical',       completions: 142, members:  76 },
+  { topic: 'Communication',  completions:  89, members:  54 },
+];
+const lmsTotal = lmsTopics.reduce((s, t) => s + t.completions, 0); // 1,257
+
+// Weekly engagement trajectory (active members + completions per week)
+const weeklyEngagement = [
+  { week: 'W14', active:  31, completed:  6 },
+  { week: 'W15', active:  64, completed: 12 },
+  { week: 'W16', active:  91, completed: 22 },
+  { week: 'W17', active: 112, completed: 31 },
+];
+
+// The differentiator — real-world artifacts members self-attested to.
+// Endevo never stores the document itself; members tick a box confirming
+// it's in place.
+const artifacts = [
+  { label: 'with wills in place',           count: 67 },
+  { label: 'with healthcare directives',    count: 41 },
+  { label: 'with digital vaults set up',    count: 34 },
+];
+const totalArtifacts = artifacts.reduce((s, a) => s + a.count, 0); // 142
+
+// Most active — kept for the Cigna demo
+const topPerformers = [
+  { id: 'tp-1', name: 'Sarah Mitchell', dept: 'Caregiver Solutions', completed: 6, total: 6 },
+  { id: 'tp-2', name: 'Marcus Reed',    dept: 'Chronic Disease',     completed: 4, total: 6 },
+  { id: 'tp-3', name: 'David Kim',      dept: 'Member Experience',   completed: 3, total: 6 },
+  { id: 'tp-4', name: 'Aisha Patel',    dept: 'Caregiver Solutions', completed: 2, total: 6 },
+];
+
+const REPORT_TEMPLATES = [
+  { id: 'cohort',     label: 'Cohort summary',         desc: 'High-level rollup of the past 30 days — bands, completion, hours invested.' },
+  { id: 'department', label: 'Department breakdown',   desc: 'Per-department engagement and readiness — ideal for HR partner reviews.' },
+  { id: 'at-risk',    label: 'At-risk members',        desc: 'Members idle 7+ days or under 25% readiness — surfaces who needs a nudge.' },
+  { id: 'artifacts',  label: 'Artifacts report',       desc: 'Real-world legacy documents now in place — wills, directives, vaults.' },
+  { id: 'board',      label: 'Quarterly board report', desc: 'Executive PDF — clean letter, no PII, ready to send to leadership.' },
+  { id: 'compliance', label: 'Compliance bundle',      desc: 'Audit-ready signed export — events + aggregate metrics, no member content.' },
+];
+
+type Range = 'weekly' | 'monthly';
+
+// Tooltip chrome — works against both dark and light themes.
+// Uses CSS variables so it auto-adapts when the user toggles light mode.
 const tooltipStyle = {
-  background: LRColors.midnight,
+  background: 'var(--lr-navy-deep)',
   border: `1px solid ${LRColors.gold}`,
   borderRadius: 8,
   color: LRColors.pearl,
   fontFamily: 'var(--font-jura)',
   fontSize: 12,
   letterSpacing: '0.05em',
+  boxShadow: '0 12px 28px -10px rgba(0,0,0,0.45)',
+  padding: '8px 12px',
 };
+
+// Force every text row inside the tooltip to use pearl — recharts defaults to
+// black, which is invisible on the dark navy backdrop.
+const tooltipItemStyle  = { color: LRColors.pearl, fontFamily: 'var(--font-jura)', fontSize: 12 };
+const tooltipLabelStyle = { color: LRColors.gold,  fontFamily: 'var(--font-jura)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase' as const, marginBottom: 4 };
 
 const axisTick = {
   fontSize: 11,
@@ -45,157 +157,59 @@ const axisDataTick = {
   fill: LRColors.lavenderDust,
 };
 
-type Range = 'weekly' | 'monthly';
-type ExportFormat = 'txt' | 'csv';
+const legendStyle = {
+  fontFamily: 'var(--font-jura)',
+  fontSize: 11,
+  letterSpacing: '0.16em',
+  textTransform: 'uppercase' as const,
+  color: LRColors.pearl,
+};
 
-export default function HRAnalyticsPage() {
+export default function AnalyticsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [range, setRange] = useState<Range>('monthly');
-  const [aiQuery, setAiQuery] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
   if (!user) return null;
 
-  const orgEmployees = mockEmployees.filter((e) => e.organizationId === user.organizationId);
-  const totalModules = mockModules.length;
+  const startedPct   = Math.round((totalStarted   / totalMembers) * 100);
+  const protectedPct = Math.round((totalProtected / totalMembers) * 100);
 
-  const completionData = [
-    { name: 'Complete',    value: orgEmployees.filter((e) => e.progressPercentage === 100).length, color: LRColors.gold },
-    { name: 'In progress', value: orgEmployees.filter((e) => e.progressPercentage > 0 && e.progressPercentage < 100).length, color: LRColors.steel },
-    { name: 'Not started', value: orgEmployees.filter((e) => e.progressPercentage === 0).length, color: LRColors.lavenderDust },
-  ];
-
-  const departments = [...new Set(orgEmployees.map((e) => e.department))];
-  const departmentData = departments.map((dept) => {
-    const list = orgEmployees.filter((e) => e.department === dept);
-    const avg = list.reduce((acc, emp) => acc + emp.progressPercentage, 0) / list.length;
-    return { department: dept, readiness: Math.round(avg), members: list.length };
-  });
-
-  const moduleCompletionData = mockModules.map((m) => {
-    const completedCount = mockProgress.filter((p) => p.moduleId === m.id && p.status === 'completed').length;
-    return {
-      module: m.title.length > 22 ? m.title.slice(0, 20) + '…' : m.title,
-      fullTitle: m.title,
-      rate: Math.round((completedCount / Math.max(orgEmployees.length, 1)) * 100),
-      completions: completedCount,
-    };
-  });
-
-  const assessmentDistribution = [
-    { range: '0–3',       count: orgEmployees.filter((e) => e.assessmentScore !== null && e.assessmentScore <= 3).length },
-    { range: '4–6',       count: orgEmployees.filter((e) => e.assessmentScore !== null && e.assessmentScore >= 4 && e.assessmentScore <= 6).length },
-    { range: '7–10',      count: orgEmployees.filter((e) => e.assessmentScore !== null && e.assessmentScore >= 7).length },
-    { range: 'Not taken', count: orgEmployees.filter((e) => e.assessmentScore === null).length },
-  ];
-
-  const weeklyEngagementData = [
-    { week: 'W14', active: 1, completed: 0 },
-    { week: 'W15', active: 2, completed: 0 },
-    { week: 'W16', active: 3, completed: 1 },
-    { week: 'W17', active: 4, completed: 1 },
-  ];
-
-  // Band distribution — synthesised from progressPercentage (folded in from Reports)
-  const bandData = (() => {
-    const bands = { AT_RISK: 0, STARTING: 0, PREPARED: 0, PROTECTED: 0, LEGACY_READY: 0 };
-    orgEmployees.forEach((e) => {
-      const pct = e.progressPercentage;
-      if (pct >= 90) bands.LEGACY_READY++;
-      else if (pct >= 70) bands.PROTECTED++;
-      else if (pct >= 50) bands.PREPARED++;
-      else if (pct >= 25) bands.STARTING++;
-      else bands.AT_RISK++;
-    });
-    return [
-      { band: 'AT_RISK',      label: 'At Risk',      count: bands.AT_RISK },
-      { band: 'STARTING',     label: 'Starting',     count: bands.STARTING },
-      { band: 'PREPARED',     label: 'Prepared',     count: bands.PREPARED },
-      { band: 'PROTECTED',    label: 'Protected',    count: bands.PROTECTED },
-      { band: 'LEGACY_READY', label: 'Legacy Ready', count: bands.LEGACY_READY },
-    ];
-  })();
-
-  // Top performers (folded in from Reports)
-  const topPerformers = orgEmployees
-    .map((emp) => {
-      const completed = mockProgress.find((p) => p.employeeId === emp.id)?.completedModules.length || 0;
-      return { ...emp, completed, pct: Math.round((completed / Math.max(totalModules, 1)) * 100) };
-    })
-    .sort((a, b) => b.completed - a.completed)
-    .slice(0, 5);
-
-  const totalCompletions = mockProgress.reduce((acc, p) => acc + p.completedModules.length, 0);
-  const avgCompletionPct = Math.round(
-    (totalCompletions / Math.max(orgEmployees.length * totalModules, 1)) * 100
-  );
-
-  const handleExport = (format: ExportFormat) => {
-    const today = new Date().toISOString().split('T')[0];
+  const handleExport = (format: 'csv' | 'txt') => {
     setShowExportMenu(false);
-
+    const today = new Date().toISOString().split('T')[0];
     if (format === 'csv') {
       const rows = [
-        ['Member', 'Department', 'Lessons completed', 'Total lessons', 'Completion %', 'Status'],
-        ...orgEmployees.map((emp) => {
-          const completed = mockProgress.find((p) => p.employeeId === emp.id)?.completedModules.length || 0;
-          return [
-            `${emp.firstName} ${emp.lastName}`,
-            emp.department,
-            String(completed),
-            String(totalModules),
-            String(Math.round((completed / totalModules) * 100)),
-            emp.status,
-          ];
-        }),
+        ['Department', 'Members', 'Started', 'Protected', 'Engagement %'],
+        ...cohortByDept.map((d) => [d.dept, String(d.total), String(d.started), String(d.protected), `${Math.round((d.started / d.total) * 100)}%`]),
       ];
-      const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-      downloadBlob(csv, `cohort_readiness_${today}.csv`, 'text/csv');
-      toast('CSV exported — aggregate metrics only', 'success');
-      return;
+      const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      downloadBlob(csv, `analytics_${today}.csv`, 'text/csv');
+    } else {
+      const txt = `WORKFORCE READINESS — ${today.toUpperCase()}\n\n${totalProtected} of ${totalMembers} members protected · ${totalArtifacts} legacy documents now exist`;
+      downloadBlob(txt, `analytics_${today}.txt`, 'text/plain');
     }
+    toast(`Exported ${cohortByDept.length}-row report`, 'success');
+  };
 
-    const text = `═══════════════════════════════════════════════════
-       COHORT READINESS REPORT — ${today.toUpperCase()}
-   Legacy Readiness OS · Powered by Endevo
-═══════════════════════════════════════════════════
-
-Overview
-  Members:            ${orgEmployees.length}
-  Avg completion:     ${avgCompletionPct}%
-  Total completions:  ${totalCompletions}
-  Learning hours:     ${totalCompletions * 2.5}
-
-Band distribution
-${bandData.map((b) => `  ${b.label.padEnd(14)}  ${String(b.count).padStart(3)}`).join('\n')}
-
-Department breakdown
-${departmentData.map((d) => `  ${d.department.padEnd(22)}  ${d.members} members · ${d.readiness}% avg`).join('\n')}
-
-Lesson completion rates
-${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.completions}/${orgEmployees.length})`).join('\n')}
-
-═══════════════════════════════════════════════════
-  This report contains aggregate metrics only.
-  No member content, reflections, or PII included.
-═══════════════════════════════════════════════════
-`;
-    downloadBlob(text, `cohort_readiness_${today}.txt`, 'text/plain');
-    toast('Report exported — aggregate metrics only', 'success');
+  const handleGenerateReport = (id: string) => {
+    const tmpl = REPORT_TEMPLATES.find((t) => t.id === id);
+    toast(`${tmpl?.label} drafting — check your inbox in ~2 min`, 'success');
   };
 
   return (
     <DashboardLayout title="Analytics" role="org_admin">
-      <div className="flex items-center justify-between mb-7">
+      {/* Header */}
+      <div className="flex items-end justify-between mb-7 flex-wrap gap-4">
         <div>
           <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
-            Cohort insight
+            Workforce overview · last 30 days
           </p>
           <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-3xl tracking-[0.06em] mt-1">
-            Six views, one truth
+            How is this benefit doing?
           </h2>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <button
             onClick={() => { setRange('weekly'); toast('Switched to weekly window', 'info'); }}
             className="lr-btn-outline"
@@ -220,7 +234,7 @@ ${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.
           </button>
           <div className="relative">
             <button onClick={() => setShowExportMenu((o) => !o)} className="lr-btn-primary">
-              Export report ▾
+              Export ▾
             </button>
             {showExportMenu && (
               <div
@@ -232,15 +246,7 @@ ${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.
                 }}
               >
                 <ExportOption label="As text (.txt)" hint="Plain summary" onClick={() => handleExport('txt')} />
-                <ExportOption label="As spreadsheet (.csv)" hint="One row per member" onClick={() => handleExport('csv')} />
-                <ExportOption
-                  label="Schedule monthly"
-                  hint="Email this on the 1st"
-                  onClick={() => {
-                    toast('Monthly report scheduled — first delivery May 1', 'success');
-                    setShowExportMenu(false);
-                  }}
-                />
+                <ExportOption label="As spreadsheet (.csv)" hint="One row per dept" onClick={() => handleExport('csv')} />
               </div>
             )}
           </div>
@@ -248,26 +254,52 @@ ${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.
       </div>
 
       <div className="space-y-5">
-        <ChartCard
-          eyebrow="Cohort"
-          title="Band distribution"
-          insight={`${bandData.find((b) => b.count > 0)?.label ?? 'No members'} is your largest band. Send a quiet reminder from the dashboard to lift the AT_RISK group toward STARTING.`}
-        >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={bandData}>
-              <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
-              <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-              <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,190,148,0.08)' }} />
-              <Bar dataKey="count" fill={LRColors.gold} radius={[4, 4, 0, 0]} name="Members" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+        {/* ═══ HEADLINE — 3 outcome cards ═══ */}
+        <section className="grid md:grid-cols-3 gap-5">
+          <OutcomeCard
+            eyebrow="Outcome"
+            primary={`${totalProtected} of ${totalMembers}`}
+            label="Members protected"
+            sub={`Completed an action plan in ≥1 domain · +${protectedDelta} this month`}
+            accent
+          />
+          <OutcomeCard
+            eyebrow="Adoption"
+            primary={`${startedPct}%`}
+            label="Have started"
+            sub={`${totalStarted} of ${totalMembers} · +${startedDelta} this week`}
+          />
+          <OutcomeCard
+            eyebrow="Real-world impact"
+            primary={String(totalArtifacts)}
+            label="Documents self-attested"
+            sub={`${artifacts.map((a) => `${a.count} ${a.label}`).join(' · ')} — never uploaded, only confirmed`}
+            accent
+          />
+        </section>
 
+        {/* This week narrative */}
+        <div
+          className="rounded-[14px] px-6 py-5 flex items-start gap-3"
+          style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+        >
+          <span className="text-(--lr-gold) leading-none mt-0.5 text-lg">◆</span>
+          <p className="text-sm text-(--lr-pearl) leading-relaxed opacity-90">
+            <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-[0.7rem] text-(--lr-gold) block mb-1">
+              This week at a glance
+            </span>
+            <span className="text-(--lr-gold)">+{startedDelta} new starts</span> · Finance crossed 50% engagement ·
+            <span className="text-(--lr-gold)"> 4 members attested a will is in place</span> · Marcus Reed reached Custodian level.
+            Your workforce is on track to confirm <span className="text-(--lr-gold)">200+ legacy documents</span> are in place by Q3
+            <span className="opacity-70"> — we never see the documents, only that members say they exist.</span>
+          </p>
+        </div>
+
+        {/* ═══ COHORT COMPLETION — donut ═══ */}
         <ChartCard
           eyebrow="Status"
-          title="Completion overview"
-          insight={`${completionData[0].value} of ${orgEmployees.length} members have completed all four domains.`}
+          title="Cohort completion"
+          insight={`${completionData[0].value} of ${totalMembers} members have completed all four domains.`}
         >
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
@@ -286,153 +318,383 @@ ${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.
                   <Cell key={idx} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend
-                wrapperStyle={{ fontFamily: 'var(--font-jura)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: LRColors.pearl }}
-                iconType="circle"
+              <Tooltip
+                contentStyle={tooltipStyle}
+                itemStyle={tooltipItemStyle}
+                labelStyle={tooltipLabelStyle}
+                formatter={(value, name) => {
+                  const count = Number(value);
+                  const pct = Math.round((count / totalMembers) * 100);
+                  return [`${count} members (${pct}%)`, String(name)];
+                }}
               />
+              <Legend wrapperStyle={legendStyle} iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
         </ChartCard>
 
+        {/* ═══ ENGAGEMENT BY DEPARTMENT — grouped bars ═══ */}
         <ChartCard
-          eyebrow="Department"
-          title="Readiness by department"
-          insight={`${[...departmentData].sort((a, b) => b.readiness - a.readiness)[0]?.department} leads at ${[...departmentData].sort((a, b) => b.readiness - a.readiness)[0]?.readiness}% average.`}
-        >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={departmentData}>
-              <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
-              <XAxis dataKey="department" tick={axisTick} axisLine={false} tickLine={false} />
-              <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,190,148,0.08)' }} />
-              <Bar dataKey="readiness" fill={LRColors.gold} radius={[4, 4, 0, 0]} name="Avg readiness %" />
-              <Bar dataKey="members"   fill={LRColors.steel} radius={[4, 4, 0, 0]} name="Members" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          eyebrow="Modules"
-          title="Lesson completion rates"
-          insight="Foundational lessons see the highest completion. Engagement softens at the action-item stage."
+          eyebrow="Engagement"
+          title="Engagement by department"
+          subtitle="(1) Assessment started   (2) Action plan completed"
+          insight="No team is the lowest-engaged department — 0% have begun."
         >
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={moduleCompletionData}>
+            <BarChart data={cohortByDept}>
               <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
-              <XAxis dataKey="module" tick={axisTick} angle={-30} textAnchor="end" height={90} axisLine={false} tickLine={false} />
+              <XAxis dataKey="dept" tick={axisTick} axisLine={false} tickLine={false} />
               <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,190,148,0.08)' }} />
-              <Bar dataKey="rate" fill={LRColors.gold} radius={[4, 4, 0, 0]} name="Completion %" />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                itemStyle={tooltipItemStyle}
+                labelStyle={tooltipLabelStyle}
+                cursor={{ fill: 'rgba(212,190,148,0.08)' }}
+                formatter={(value, name) => {
+                  const labels: Record<string, string> = {
+                    completed: 'Completed action plan',
+                    started: 'Started assessment',
+                    total: 'Total members',
+                  };
+                  return [value as number, labels[String(name)] ?? String(name)];
+                }}
+              />
+              <Legend
+                wrapperStyle={legendStyle}
+                iconType="circle"
+                formatter={(value: string) => {
+                  const labels: Record<string, string> = {
+                    completed: 'Completed action plan',
+                    started: 'Started assessment',
+                    total: 'Total members',
+                  };
+                  return labels[value] ?? value;
+                }}
+              />
+              <Bar dataKey="completed" fill={LRColors.gold}         radius={[4, 4, 0, 0]} />
+              <Bar dataKey="started"   fill={LRColors.steel}        radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total"     fill={LRColors.lavenderDust} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
+        {/* ═══ ACTION ITEMS + LMS TOPICS — two cards side-by-side ═══ */}
+        <section className="grid md:grid-cols-2 gap-5">
+          {/* Action items */}
+          <div
+            className="rounded-[14px] p-7"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+              Action items
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1 mb-6">
+              Total completed
+            </h3>
+
+            <div className="text-center mb-5">
+              <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-6xl leading-none mb-2">
+                {actionItems.total.toLocaleString()}
+              </p>
+              <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-lavender-dust)">
+                across {actionItems.members} members
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <Stat label="Avg / member" value={String(actionItems.avgPerMember)} />
+              <Stat label="This week"    value={String(actionItems.thisWeek)}    delta={`+${actionItems.thisWeek}`} />
+              <Stat label="This month"   value={String(actionItems.thisMonth)}   delta={`+${actionItems.thisMonth}`} />
+            </div>
+
+            <p className="text-xs text-(--lr-lavender-dust) mt-5 leading-relaxed">
+              <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
+                Action items
+              </span>
+              Concrete tasks taken across the four domains.
+            </p>
+          </div>
+
+          {/* LMS lessons */}
+          <div
+            className="rounded-[14px] p-7"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <div className="flex items-baseline justify-between mb-1">
+              <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+                LMS lessons
+              </p>
+              <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-2xl leading-none">
+                {lmsTotal.toLocaleString()}
+              </p>
+            </div>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1 mb-5">
+              Completed across 6 topics
+            </h3>
+
+            <div className="space-y-3">
+              {lmsTopics.map((t) => {
+                const widthPct = (t.completions / lmsTopics[0].completions) * 100;
+                return (
+                  <div key={t.topic}>
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <span className="font-(family-name:--font-jura) text-[0.62rem] tracking-[0.18em] uppercase text-(--lr-pearl)">
+                        {t.topic}
+                      </span>
+                      <span className="font-(family-name:--font-jetbrains) text-xs text-(--lr-gold) whitespace-nowrap">
+                        {t.completions}
+                        <span className="text-(--lr-lavender-dust) ml-2">{t.members} members</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full" style={{ background: 'rgba(212,190,148,0.12)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${widthPct}%`, background: 'var(--lr-gold)' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-(--lr-lavender-dust) mt-5 leading-relaxed">
+              <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
+                Each topic
+              </span>
+              one section of the Legacy Readiness LMS.
+            </p>
+          </div>
+        </section>
+
+        {/* ═══ AVG READINESS — by department, per domain ═══ */}
         <ChartCard
-          eyebrow="Assessment"
-          title="Initial readiness score distribution"
-          insight={`${assessmentDistribution[3].count} member${assessmentDistribution[3].count === 1 ? '' : 's'} haven't yet taken the assessment.`}
+          eyebrow="Domain × department"
+          title="Avg readiness — by department, per domain"
+          insight="HR leads on Legal · Finance leads on Financial · Engineering leads on Digital · HR leads on Physical."
         >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={assessmentDistribution}>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={deptDomainReadiness}>
               <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
-              <XAxis dataKey="range" tick={axisTick} axisLine={false} tickLine={false} />
-              <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(212,190,148,0.08)' }} />
-              <Bar dataKey="count" fill={LRColors.gold} radius={[4, 4, 0, 0]} name="Members" />
+              <XAxis dataKey="dept" tick={axisTick} axisLine={false} tickLine={false} />
+              <YAxis tick={axisDataTick} axisLine={false} tickLine={false} unit="%" />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                itemStyle={tooltipItemStyle}
+                labelStyle={tooltipLabelStyle}
+                cursor={{ fill: 'rgba(212,190,148,0.08)' }}
+                formatter={(value, name) => {
+                  const labels: Record<string, string> = {
+                    legal:     '01 Legal',
+                    financial: '02 Financial',
+                    digital:   '03 Digital',
+                    physical:  '04 Physical',
+                  };
+                  return [`${value}%`, labels[String(name)] ?? String(name)];
+                }}
+              />
+              <Legend
+                wrapperStyle={legendStyle}
+                iconType="circle"
+                formatter={(value: string) => {
+                  const labels: Record<string, string> = {
+                    legal:     '01 Legal',
+                    financial: '02 Financial',
+                    digital:   '03 Digital',
+                    physical:  '04 Physical',
+                  };
+                  return labels[value] ?? value;
+                }}
+              />
+              <Bar dataKey="legal"     fill={LRColors.gold}         radius={[3, 3, 0, 0]} />
+              <Bar dataKey="financial" fill="#C9A876"               radius={[3, 3, 0, 0]} />
+              <Bar dataKey="digital"   fill={LRColors.steel}        radius={[3, 3, 0, 0]} />
+              <Bar dataKey="physical"  fill={LRColors.lavenderDust} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
+        {/* ═══ WEEKLY ENGAGEMENT TRAJECTORY — line chart ═══ */}
         <ChartCard
           eyebrow="Engagement"
           title="Weekly engagement trajectory"
-          insight="Engagement is ramping. Active members and completions are both trending upward week over week."
+          insight="Active members up 195% over four weeks. Completions are tracking with the engagement curve."
         >
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={weeklyEngagementData}>
+            <LineChart data={weeklyEngagement}>
               <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
               <XAxis dataKey="week" tick={axisTick} axisLine={false} tickLine={false} />
               <YAxis tick={axisDataTick} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend
-                wrapperStyle={{ fontFamily: 'var(--font-jura)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: LRColors.pearl }}
-                iconType="line"
+              <Tooltip
+                contentStyle={tooltipStyle}
+                itemStyle={tooltipItemStyle}
+                labelStyle={tooltipLabelStyle}
+                formatter={(value, name) => {
+                  const labels: Record<string, string> = {
+                    active: 'Active members',
+                    completed: 'Completions',
+                  };
+                  return [value as number, labels[String(name)] ?? String(name)];
+                }}
               />
-              <Line type="monotone" dataKey="active"    stroke={LRColors.gold}  strokeWidth={2} dot={{ fill: LRColors.gold, r: 4 }} name="Active members" />
-              <Line type="monotone" dataKey="completed" stroke={LRColors.steel} strokeWidth={2} dot={{ fill: LRColors.steel, r: 4 }} name="Completions" />
+              <Legend
+                wrapperStyle={legendStyle}
+                iconType="line"
+                formatter={(value: string) => {
+                  const labels: Record<string, string> = {
+                    active: 'Active members',
+                    completed: 'Completions',
+                  };
+                  return labels[value] ?? value;
+                }}
+              />
+              <Line type="monotone" dataKey="active"    stroke={LRColors.gold}  strokeWidth={2} dot={{ fill: LRColors.gold,  r: 4 }} />
+              <Line type="monotone" dataKey="completed" stroke={LRColors.steel} strokeWidth={2} dot={{ fill: LRColors.steel, r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Ask AI panel */}
-        <div
-          className="rounded-[14px] p-6"
+        {/* ═══ THE FUNNEL — kept simplified, the strategic narrative chart ═══ */}
+        <section
+          className="rounded-[14px] p-7"
+          style={{
+            background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+            The journey
+          </p>
+          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1 mb-2">
+            Where do members fall off?
+          </h3>
+          <p className="text-xs text-(--lr-lavender-dust) mb-6 leading-relaxed">
+            Every step is the path from invitation to Final Playbook. The biggest drop-off tells you where to invest.
+          </p>
+
+          <div className="space-y-2.5">
+            {funnel.map((stage, i) => {
+              const widthPct = (stage.count / funnel[0].count) * 100;
+              const fromPrev = i === 0 ? null : stage.count - funnel[i - 1].count;
+              const dropPct = i === 0 ? null : Math.round((1 - stage.count / funnel[i - 1].count) * 100);
+              const isBiggestDrop = (() => {
+                if (i === 0) return false;
+                let maxDrop = 0;
+                let maxIdx = -1;
+                for (let j = 1; j < funnel.length; j++) {
+                  const drop = funnel[j - 1].count - funnel[j].count;
+                  if (drop > maxDrop) { maxDrop = drop; maxIdx = j; }
+                }
+                return i === maxIdx;
+              })();
+
+              return (
+                <div key={stage.label}>
+                  <div className="flex items-baseline justify-between mb-1.5 gap-3">
+                    <p className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.18em] uppercase text-(--lr-pearl)">
+                      {stage.label}
+                    </p>
+                    <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-sm whitespace-nowrap">
+                      {stage.count}
+                      <span className="text-(--lr-lavender-dust) text-xs ml-2">
+                        ({Math.round((stage.count / funnel[0].count) * 100)}%)
+                      </span>
+                    </p>
+                  </div>
+                  <div className="w-full h-7 rounded-[6px] overflow-hidden relative" style={{ background: 'rgba(212,190,148,0.08)' }}>
+                    <div
+                      className="h-full rounded-[6px] transition-all duration-700 flex items-center justify-end pr-3"
+                      style={{
+                        width: `${widthPct}%`,
+                        background: isBiggestDrop
+                          ? 'linear-gradient(90deg, rgba(166,84,84,0.6) 0%, rgba(166,84,84,0.85) 100%)'
+                          : 'linear-gradient(90deg, var(--lr-gold-soft) 0%, var(--lr-gold) 100%)',
+                      }}
+                    >
+                      {fromPrev !== null && (
+                        <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase" style={{ color: 'var(--lr-navy-deep)' }}>
+                          {fromPrev > 0 ? `+${fromPrev}` : `${fromPrev}`} · {dropPct! > 0 ? `−${dropPct}%` : `+${Math.abs(dropPct!)}%`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <hr className="lr-separator my-5" />
+          <p className="text-sm text-(--lr-pearl) opacity-90 leading-relaxed">
+            <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
+              What this means
+            </span>
+            The biggest drop is between <span className="text-(--lr-gold)">Completed Action Plan → Final Playbook</span> —
+            38% of starters finish their plan, but only 24% reach Playbook. A nudge program at week 3 could close this gap fastest.
+          </p>
+        </section>
+
+        {/* ═══ REPORTS ═══ */}
+        <section
+          className="rounded-[14px] p-7"
           style={{
             background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
             border: '1px solid var(--border-gold)',
           }}
         >
           <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
-            Ask Jesse
+            Generate report
           </p>
-          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mb-4">
-            Custom analytics, in your own words
+          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mb-2">
+            Pick a template
           </h3>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && aiQuery.trim()) {
-                  toast(`Drafting report for "${aiQuery.slice(0, 40)}${aiQuery.length > 40 ? '…' : ''}"`, 'success');
-                  setAiQuery('');
-                }
-              }}
-              placeholder="e.g. compare Caregiver Solutions vs Chronic Disease average readiness"
-              className="flex-1 rounded-[10px] px-4 py-3 text-sm text-(--lr-pearl) placeholder:text-(--lr-lavender-dust) focus:outline-none focus:border-(--lr-gold) transition-colors"
-              style={{ background: 'rgba(28,38,68,0.7)', border: '1px solid var(--border-subtle)' }}
-            />
-            <button
-              onClick={() => {
-                if (!aiQuery.trim()) {
-                  toast('Type a question first — e.g. "compare departments by readiness"', 'warn');
-                  return;
-                }
-                toast(`Drafting report for "${aiQuery.slice(0, 40)}${aiQuery.length > 40 ? '…' : ''}"`, 'success');
-                setAiQuery('');
-              }}
-              className="lr-btn-primary whitespace-nowrap"
-            >
-              Generate
-            </button>
-          </div>
-          <p className="text-xs text-(--lr-lavender-dust) mt-3">
-            Natural-language reports run on aggregate data only. Member-level content is never accessible.
+          <p className="text-xs text-(--lr-lavender-dust) mb-5 leading-relaxed">
+            Reports run on aggregate data only — never individual answers or content.
           </p>
-        </div>
 
-        {/* Top performers — folded in from former Reports page */}
-        <div
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {REPORT_TEMPLATES.map((tmpl) => (
+              <button
+                key={tmpl.id}
+                onClick={() => handleGenerateReport(tmpl.id)}
+                className="text-left rounded-[12px] p-5 transition-all hover:-translate-y-0.5"
+                style={{
+                  background: 'rgba(212,190,148,0.04)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-base tracking-[0.05em] mb-1.5">
+                  {tmpl.label}
+                </p>
+                <p className="text-xs text-(--lr-pearl) opacity-85 leading-relaxed mb-3">{tmpl.desc}</p>
+                <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-gold)">
+                  Generate →
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ═══ MOST ACTIVE — kept for Cigna demo ═══ */}
+        <section
           className="rounded-[14px] p-6"
           style={{
             background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <div className="flex items-baseline justify-between mb-4">
-            <div>
-              <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
-                Most active
-              </p>
-              <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1">
-                Members closest to LEGACY_READY
-              </h3>
-            </div>
-          </div>
+          <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+            Most active
+          </p>
+          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1 mb-2">
+            Members closest to LEGACY_READY
+          </h3>
           <p className="text-xs text-(--lr-lavender-dust) mb-4">
-            Names visible only because you administer this tenant. Their reflections and answers remain private to them.
+            Names visible only because you administer this tenant. Their reflections and answers stay private.
           </p>
 
           <div className="space-y-2">
@@ -449,27 +711,124 @@ ${moduleCompletionData.map((m) => `  ${m.fullTitle.padEnd(38)}  ${m.rate}% (${m.
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-(--lr-pearl) truncate">
-                    {emp.firstName} {emp.lastName}
-                  </p>
+                  <p className="text-sm text-(--lr-pearl) truncate">{emp.name}</p>
                   <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
-                    {emp.department}
+                    {emp.dept}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-base">
-                    {emp.completed}/{totalModules}
+                    {emp.completed}/{emp.total}
                   </p>
                   <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-lavender-dust)">
-                    {emp.pct}% complete
+                    {Math.round((emp.completed / emp.total) * 100)}% complete
                   </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </DashboardLayout>
+  );
+}
+
+/* ──────────── primitives ──────────── */
+
+function ChartCard({
+  eyebrow,
+  title,
+  subtitle,
+  insight,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  insight: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-[14px] p-6"
+      style={{
+        background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+        border: '1px solid var(--border-subtle)',
+      }}
+    >
+      <div className="mb-5">
+        <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
+          {eyebrow}
+        </p>
+        <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1">
+          {title}
+        </h3>
+        {subtitle && (
+          <p className="font-(family-name:--font-jura) text-[0.62rem] tracking-[0.18em] uppercase text-(--lr-lavender-dust) mt-1.5">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {children}
+      <hr className="lr-separator my-4" />
+      <p className="text-xs text-(--lr-pearl) opacity-85 leading-relaxed">
+        <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
+          Insight
+        </span>
+        {insight}
+      </p>
+    </div>
+  );
+}
+
+function OutcomeCard({
+  eyebrow,
+  primary,
+  label,
+  sub,
+  accent,
+}: {
+  eyebrow: string;
+  primary: string;
+  label: string;
+  sub: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-[14px] p-6"
+      style={{
+        background: accent
+          ? 'linear-gradient(180deg, rgba(212,190,148,0.16) 0%, rgba(212,190,148,0.06) 100%)'
+          : 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+        border: accent ? '1px solid var(--border-gold)' : '1px solid var(--border-subtle)',
+      }}
+    >
+      <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+        {eyebrow}
+      </p>
+      <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-3xl leading-none mb-2">
+        {primary}
+      </p>
+      <p className="font-(family-name:--font-italiana) text-(--lr-pearl) text-lg tracking-[0.04em] mb-2">
+        {label}
+      </p>
+      <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">{sub}</p>
+    </div>
+  );
+}
+
+function Stat({ label, value, delta }: { label: string; value: string; delta?: string }) {
+  return (
+    <div className="text-center">
+      <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-xl leading-none">{value}</p>
+      <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.22em] uppercase text-(--lr-lavender-dust) mt-1.5">
+        {label}
+      </p>
+      {delta && (
+        <p className="font-(family-name:--font-jetbrains) text-[0.6rem] text-(--lr-gold-soft) mt-0.5">{delta}</p>
+      )}
+    </div>
   );
 }
 
@@ -498,45 +857,4 @@ function downloadBlob(content: string, filename: string, mimeType: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-function ChartCard({
-  eyebrow,
-  title,
-  insight,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  insight: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="rounded-[14px] p-6"
-      style={{
-        background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
-        border: '1px solid var(--border-subtle)',
-      }}
-    >
-      <div className="flex items-baseline justify-between mb-5">
-        <div>
-          <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
-            {eyebrow}
-          </p>
-          <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mt-1">
-            {title}
-          </h3>
-        </div>
-      </div>
-      {children}
-      <hr className="lr-separator my-4" />
-      <p className="text-xs text-(--lr-pearl) opacity-85 leading-relaxed">
-        <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
-          Insight
-        </span>
-        {insight}
-      </p>
-    </div>
-  );
 }

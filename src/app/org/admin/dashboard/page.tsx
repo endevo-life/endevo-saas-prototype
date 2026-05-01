@@ -26,13 +26,14 @@ export default function HRDashboard() {
     (e) => e.organizationId === user?.organizationId && e.role === 'org_member'
   );
 
-  const totalEmployees = orgEmployees.length;
-  const enrolled = orgEmployees.filter((e) => e.onboardedAt).length;
-  const enrolledPct = Math.round((enrolled / totalEmployees) * 100);
-  const completed = orgEmployees.filter((e) => e.progressPercentage === 100).length;
-  const avgReadiness = Math.round(
-    orgEmployees.reduce((sum, e) => sum + e.progressPercentage, 0) / totalEmployees
-  );
+  // Enterprise-scale synthetic figures matching the analytics page so the
+  // demo tells a coherent story. Real org members live in mockEmployees.
+  const totalEmployees = 375;
+  const enrolled       = 278; // members who have started the assessment
+  const completed      = 141; // members who have completed an action plan
+  const avgReadiness   =  52; // org-wide rough average
+  // (orgEmployees still pulled above for any per-member features below)
+  void orgEmployees;
 
   const weeklyTrend = [
     { week: 'W14', readiness: 12, lessons: 8 },
@@ -89,12 +90,11 @@ export default function HRDashboard() {
         </button>
       </div>
 
-      {/* Top metrics — score-style */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
-        <Metric label="Avg. Readiness" value={`${avgReadiness}%`} sub={`across ${totalEmployees} members`} accent />
-        <Metric label="Enrolled" value={`${enrolledPct}%`} sub={`${enrolled} of ${totalEmployees}`} />
-        <Metric label="Completed Path" value={`${completed}`} sub={completed === 1 ? 'member' : 'members'} />
-        <Metric label="Active this week" value="4" sub="of 4 members" />
+      {/* Top metrics — Enrolled is the hero card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <EnrolledHero enrolled={enrolled} total={totalEmployees} />
+        <Metric label="Avg. Readiness" value={`${avgReadiness}%`} sub={`across ${totalEmployees} members`} />
+        <Metric label="Completed Path" value={`${completed}`}    sub="members finished an action plan" />
       </div>
 
       {/* Charts */}
@@ -125,7 +125,15 @@ export default function HRDashboard() {
               <CartesianGrid stroke="rgba(212,190,148,0.08)" vertical={false} />
               <XAxis dataKey="week" stroke={LRColors.lavenderDust} tick={{ fontSize: 11, fontFamily: 'var(--font-jura)', letterSpacing: '0.18em' }} axisLine={false} tickLine={false} />
               <YAxis stroke={LRColors.lavenderDust} tick={{ fontSize: 11, fontFamily: 'var(--font-jetbrains)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: LRColors.midnight, border: `1px solid ${LRColors.gold}`, borderRadius: 8, color: LRColors.pearl, fontFamily: 'var(--font-jura)', fontSize: 12, letterSpacing: '0.05em' }} />
+              <Tooltip
+                contentStyle={{ background: 'var(--lr-navy-deep)', border: `1px solid ${LRColors.gold}`, borderRadius: 8, color: LRColors.pearl, fontFamily: 'var(--font-jura)', fontSize: 12, letterSpacing: '0.05em', boxShadow: '0 12px 28px -10px rgba(0,0,0,0.45)', padding: '8px 12px' }}
+                itemStyle={{ color: LRColors.pearl, fontFamily: 'var(--font-jura)', fontSize: 12 }}
+                labelStyle={{ color: LRColors.gold, fontFamily: 'var(--font-jura)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 4 }}
+                formatter={(value, name) => {
+                  const labels: Record<string, string> = { readiness: 'Avg readiness %', lessons: 'Lessons completed' };
+                  return [value as number, labels[String(name)] ?? String(name)];
+                }}
+              />
               <Area type="monotone" dataKey="readiness" stroke={LRColors.gold} strokeWidth={2} fill="url(#goldFade)" />
               <Area type="monotone" dataKey="lessons"   stroke={LRColors.steel} strokeWidth={1.5} fill="transparent" />
             </AreaChart>
@@ -181,7 +189,7 @@ export default function HRDashboard() {
         />
         <ActionCard
           eyebrow="Engagement"
-          title="Send a quiet reminder"
+          title="Send a helpful reminder"
           body="A nudge to members who haven't begun. The message is yours; the data stays private."
           cta="Compose reminder"
           onClick={() => setShowReminderModal(true)}
@@ -253,6 +261,42 @@ function Metric({ label, value, sub, accent }: { label: string; value: string; s
       </p>
       <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-3xl">{value}</p>
       <p className="text-xs text-(--lr-lavender-dust) mt-1.5">{sub}</p>
+    </div>
+  );
+}
+
+function EnrolledHero({ enrolled, total }: { enrolled: number; total: number }) {
+  const pct = Math.round((enrolled / total) * 100);
+  return (
+    <div
+      className="rounded-[14px] p-6 lg:col-span-2 flex flex-col"
+      style={{
+        background: 'linear-gradient(180deg, rgba(212,190,148,0.18) 0%, rgba(212,190,148,0.06) 100%)',
+        border: '1px solid var(--border-gold)',
+      }}
+    >
+      <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
+        Enrolled members
+      </p>
+      <div className="flex items-baseline gap-3 flex-wrap">
+        <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-6xl lg:text-7xl leading-none">
+          {enrolled.toLocaleString()}
+        </p>
+        <p className="font-(family-name:--font-italiana) text-(--lr-pearl) text-2xl tracking-[0.04em] opacity-90">
+          of {total.toLocaleString()}
+        </p>
+      </div>
+      <p className="text-xs text-(--lr-lavender-dust) mt-3 leading-relaxed">
+        {pct}% of your workforce has joined the Legacy Path
+      </p>
+
+      {/* Slim progress bar */}
+      <div className="mt-4 w-full h-1.5 rounded-full" style={{ background: 'rgba(212,190,148,0.12)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, background: 'var(--lr-gold)' }}
+        />
+      </div>
     </div>
   );
 }

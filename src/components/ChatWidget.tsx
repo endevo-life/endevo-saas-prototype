@@ -15,7 +15,7 @@ interface ChatMessage {
 const INITIAL_GREETING: ChatMessage = {
   role: 'assistant',
   content:
-    "I'm Jesse — your guide through the Legacy Path. Ask me about the four domains, your readiness score, or how the Final Playbook compiles itself. I'm here when you're ready.",
+    "I'm your Trusted Advisor — here to walk you through the Legacy Path. Ask me about the four domains, your readiness score, or how the Final Playbook compiles itself. Take your time.",
 };
 
 const QUICK_QUESTIONS = [
@@ -117,13 +117,13 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
         }}
       >
         <div className="flex items-center gap-3">
-          <JesseAvatar size={40} />
+          <AdvisorAvatar size={40} />
           <div>
             <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.06em] leading-tight">
-              Ask Jesse
+              Ask Trusted Advisor
             </p>
             <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) mt-0.5">
-              Your guide on the path
+              Human-centric · always private
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
             <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
               {!isUser && (
                 <div className="mr-2 flex-shrink-0">
-                  <JesseAvatar size={28} />
+                  <AdvisorAvatar size={28} />
                 </div>
               )}
               <div
@@ -179,7 +179,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
         {isTyping && (
           <div className="flex justify-start">
             <div className="mr-2 flex-shrink-0">
-              <JesseAvatar size={28} />
+              <AdvisorAvatar size={28} />
             </div>
             <div
               className="rounded-[12px] px-4 py-3"
@@ -237,7 +237,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Ask Jesse anything…"
+            placeholder="Ask your Trusted Advisor anything…"
             rows={2}
             className="flex-1 resize-none rounded-[10px] px-3 py-2 text-sm focus:outline-none transition-colors"
             style={{
@@ -272,20 +272,24 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
 
 /* ──────────── primitives ──────────── */
 
-function JesseAvatar({ size }: { size: number }) {
+function AdvisorAvatar({ size }: { size: number }) {
   return (
     <div
-      className="rounded-full flex items-center justify-center font-(family-name:--font-italiana) tracking-[0.05em]"
+      className="rounded-full flex items-center justify-center"
       style={{
         width: size,
         height: size,
         background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-midnight) 100%)',
         color: 'var(--lr-gold)',
         border: '1px solid var(--lr-gold)',
-        fontSize: size * 0.45,
       }}
     >
-      J
+      {/* Concentric ring monogram — Eternal Geometry */}
+      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+        <circle cx="12" cy="12" r="6"  stroke="currentColor" strokeWidth="1" opacity="0.7" />
+        <circle cx="12" cy="12" r="2"  fill="currentColor" />
+      </svg>
     </div>
   );
 }

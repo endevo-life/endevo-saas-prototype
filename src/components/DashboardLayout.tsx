@@ -376,7 +376,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                 border: '1px solid var(--lr-gold)',
               }}
             >
-              Ask Jesse — AI Guide
+              Ask Trusted Advisor
             </button>
           </div>
         </div>
