@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockOrganizations } from '@/lib/mock-data';
+import { mockOrganizations, tenantHost, tenantUrl } from '@/lib/mock-data';
 import { useToast } from '@/components/common/Toast';
 
 interface NotificationPref {
@@ -86,6 +86,48 @@ export default function HRSettingsPage() {
             </div>
           </div>
         </Section>
+
+        {/* Tenant identity — IDs and URLs your IT team will plug into SSO/SCIM */}
+        {organization && (
+          <Section eyebrow="Identity" title="Tenant identity">
+            <p className="text-xs text-(--lr-lavender-dust) mb-4 leading-relaxed">
+              Identifiers your IT team will use for SSO, SCIM provisioning, and webhook configuration.
+            </p>
+            <div className="space-y-3">
+              <TenantIdentityRow label="Tenant ID" value={organization.id} mono onCopy={(v) => toast(`${v} copied`, 'success')} />
+              <TenantIdentityRow label="Slug" value={organization.slug} onCopy={(v) => toast(`${v} copied`, 'success')} />
+              <TenantIdentityRow
+                label="Tenant URL"
+                value={tenantHost(organization.slug)}
+                copyValue={tenantUrl(organization.slug)}
+                accent
+                onCopy={() => toast(`${tenantUrl(organization.slug)} copied`, 'success')}
+              />
+            </div>
+            <button
+              onClick={() => {
+                const payload = JSON.stringify(
+                  {
+                    tenantId: organization.id,
+                    slug: organization.slug,
+                    tenantUrl: tenantUrl(organization.slug),
+                    tier: organization.subscriptionTier,
+                  },
+                  null,
+                  2
+                );
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  navigator.clipboard.writeText(payload).catch(() => {});
+                }
+                toast('Tenant identity copied as JSON', 'success');
+              }}
+              className="lr-btn-outline mt-4"
+              style={{ color: 'var(--lr-pearl)', borderColor: 'var(--lr-pearl)' }}
+            >
+              Copy all as JSON
+            </button>
+          </Section>
+        )}
 
         {/* Notification preferences */}
         <Section eyebrow="Signals" title="Notification preferences">
@@ -230,7 +272,7 @@ export default function HRSettingsPage() {
             </p>
             <ul className="text-sm text-(--lr-pearl) opacity-90 leading-relaxed mt-2 space-y-1">
               <li>· Member answers, reflections, or letter content</li>
-              <li>· Final Playbook chapters belonging to specific members</li>
+              <li>· FinalPlaybook chapters belonging to specific members</li>
               <li>· PHI / PII captured anywhere in the platform</li>
             </ul>
             <p className="text-xs text-(--lr-lavender-dust) leading-relaxed mt-3">
@@ -282,6 +324,62 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+function TenantIdentityRow({
+  label,
+  value,
+  copyValue,
+  mono,
+  accent,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copyValue?: string;
+  mono?: boolean;
+  accent?: boolean;
+  onCopy: (v: string) => void;
+}) {
+  const handleCopy = () => {
+    const v = copyValue ?? value;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(v).catch(() => {});
+    }
+    onCopy(v);
+  };
+  return (
+    <div
+      className="flex items-center justify-between gap-3 px-4 py-3 rounded-[10px]"
+      style={{
+        background: accent ? 'rgba(212,190,148,0.08)' : 'rgba(212,190,148,0.04)',
+        border: accent ? '1px solid var(--border-gold)' : '1px solid var(--border-subtle)',
+      }}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) mb-1">
+          {label}
+        </p>
+        <code
+          className={`text-sm truncate block ${mono ? 'font-(family-name:--font-jetbrains)' : ''}`}
+          style={{ color: accent ? 'var(--lr-gold)' : 'var(--lr-pearl)' }}
+        >
+          {value}
+        </code>
+      </div>
+      <button
+        onClick={handleCopy}
+        className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase px-3 py-1.5 rounded-[8px] transition-colors flex-shrink-0"
+        style={{
+          color: 'var(--lr-gold)',
+          border: '1px solid var(--border-gold)',
+          background: 'rgba(212,190,148,0.06)',
+        }}
+      >
+        Copy
+      </button>
     </div>
   );
 }

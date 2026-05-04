@@ -15,12 +15,12 @@ interface ChatMessage {
 const INITIAL_GREETING: ChatMessage = {
   role: 'assistant',
   content:
-    "I'm your Trusted Advisor — here to walk you through the Legacy Path. Ask me about the four domains, your readiness score, or how the Final Playbook compiles itself. Take your time.",
+    "I'm your Trusted Advisor — here to walk you through the Legacy Path. Ask me about the four domains, your readiness score, or how the FinalPlaybook compiles itself. Take your time.",
 };
 
 const QUICK_QUESTIONS = [
   'What does my readiness score mean?',
-  'How does the Final Playbook work?',
+  'How does the FinalPlaybook work?',
   'What\'s the difference between domains?',
   'Who can see my answers?',
 ];
@@ -34,7 +34,7 @@ const RESPONSE_LIBRARY: { match: string[]; reply: string }[] = [
   {
     match: ['playbook', 'final', 'compile'],
     reply:
-      'The Final Playbook compiles itself as you complete domains. Each domain you finish adds a chapter — Legal, Financial, Digital, Physical. The full document only exists once all four are complete, and it stays yours alone.',
+      'The FinalPlaybook compiles itself as you complete domains. Each domain you finish adds a chapter — Legal, Financial, Digital, Physical. The full document only exists once all four are complete, and it stays yours alone.',
   },
   {
     match: ['domain', 'four', 'legal', 'financial', 'digital', 'physical'],
@@ -44,7 +44,7 @@ const RESPONSE_LIBRARY: { match: string[]; reply: string }[] = [
   {
     match: ['private', 'privacy', 'see', 'employer', 'admin'],
     reply:
-      'Your answers, reflections, and Final Playbook are yours alone. Your Org Admin only sees that you completed something — never the contents. Endevo never sees your individual answers either.',
+      'Your answers, reflections, and FinalPlaybook are yours alone. Your Org Admin only sees that you completed something — never the contents. Endevo never sees your individual answers either.',
   },
   {
     match: ['streak', 'shield', 'xp', 'level', 'badge'],
@@ -83,7 +83,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
       const matched = RESPONSE_LIBRARY.find((entry) => entry.match.some((m) => lower.includes(m)));
       const reply =
         matched?.reply ??
-        'I can help with the four domains, your readiness score, the Final Playbook, streaks and badges, the Letter Vault, or what\'s private vs visible to your Org Admin. What would you like to explore?';
+        'I can help with the four domains, your readiness score, the FinalPlaybook, streaks and badges, the Letter Vault, or what\'s private vs visible to your Org Admin. What would you like to explore?';
 
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
       setIsTyping(false);

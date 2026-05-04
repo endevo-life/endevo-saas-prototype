@@ -148,7 +148,7 @@ export default function AuditLogsPage() {
             SOC 2 · HIPAA-aware
           </span>
           Audit events are append-only, signed, and retained for 7 years. Member content (lesson notes,
-          reflections, Final Playbook contents) is never logged here — only the action taken on it.
+          reflections, FinalPlaybook contents) is never logged here — only the action taken on it.
         </p>
       </div>
 

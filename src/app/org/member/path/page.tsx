@@ -39,7 +39,7 @@ interface PathStage {
  *
  * Order is locked per product spec (April 2026, Niki):
  *   00 Assessment  →  01 Build Project  →  02 Legal  →  03 Financial  →
- *   04 Physical    →  05 Digital        →  06 Communication  →  Final Playbook
+ *   04 Physical    →  05 Digital        →  06 Communication  →  FinalPlaybook
  */
 function buildStages(progress: number): PathStage[] {
   // Threshold pattern: each stage requires the prior to clear.
@@ -241,7 +241,7 @@ export default function LegacyPathTree() {
             Your journey
           </p>
           <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.06em] mb-4">
-            From assessment to Final Playbook
+            From assessment to FinalPlaybook
           </h3>
 
           <div className="relative mx-auto" style={{ width: COL_WIDTH, height: totalHeight }}>
@@ -537,7 +537,7 @@ export default function LegacyPathTree() {
                 { who: 'To my executor',  unlocked: progress >= 38, hint: 'Unlocks after Legal' },
                 { who: 'To my partner',   unlocked: progress >= 58, hint: 'Unlocks after Financial' },
                 { who: 'To my children',  unlocked: progress >= 86, hint: 'Unlocks after Digital' },
-                { who: 'To future me',    unlocked: progress >= 100, hint: 'Unlocks at Final Playbook' },
+                { who: 'To future me',    unlocked: progress >= 100, hint: 'Unlocks at FinalPlaybook' },
               ].map((l) => (
                 <button
                   key={l.who}

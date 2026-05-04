@@ -302,7 +302,7 @@ export const auditEvents: AuditEvent[] = [
     category: 'privacy',
     severity: 'info',
     actor: { type: 'org_member', name: 'Sarah Mitchell', email: 'sarah.mitchell@xyzcompany.com' },
-    action: 'Exported personal Final Playbook',
+    action: 'Exported personal FinalPlaybook',
     tenant: 'XYZ Company',
     ip: '203.0.113.88',
     metadata: { sections: 3 },

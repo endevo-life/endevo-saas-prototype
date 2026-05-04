@@ -35,7 +35,7 @@ const PERSONAS: Persona[] = [
     lastName: 'Mitchell',
     roleLabel: 'Member · Advanced',
     context: 'Caregiver Solutions, XYZ Company',
-    blurb: 'Mid-journey through her Legacy Path. Three of four domains active, Final Playbook within reach.',
+    blurb: 'Mid-journey through her Legacy Path. Three of four domains active, FinalPlaybook within reach.',
     variant: 'member',
     metric: { label: 'Readiness', value: '78%' },
   },

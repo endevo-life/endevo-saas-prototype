@@ -49,7 +49,7 @@ function deriveState(progress: number): PersonaState {
     return {
       band: 'PROTECTED',
       bandLabel: 'Protected',
-      bandBlurb: 'Your legal and digital scaffolding hold. The Final Playbook is within reach.',
+      bandBlurb: 'Your legal and digital scaffolding hold. The FinalPlaybook is within reach.',
       score: 812,
       xp: 1840,
       streak: 11,
@@ -130,7 +130,7 @@ function deriveState(progress: number): PersonaState {
 function buildPath(progress: number): Domain[] {
   if (progress >= 70) {
     return [
-      { id: 'legal',     number: '01', label: 'LEGAL',     description: 'Will, power of attorney, healthcare directive', pct: 100, status: 'complete', unitDone: 6, unitTotal: 6, nextAction: 'Domain complete · Review your Final Playbook' },
+      { id: 'legal',     number: '01', label: 'LEGAL',     description: 'Will, power of attorney, healthcare directive', pct: 100, status: 'complete', unitDone: 6, unitTotal: 6, nextAction: 'Domain complete · Review your FinalPlaybook' },
       { id: 'financial', number: '02', label: 'FINANCIAL', description: 'Accounts, beneficiaries, ongoing obligations',  pct: 92,  status: 'active',   unitDone: 5, unitTotal: 6, nextAction: 'Beneficiary review · 8 min' },
       { id: 'digital',   number: '03', label: 'DIGITAL',   description: 'Logins, devices, online identity, social',     pct: 70,  status: 'active',   unitDone: 4, unitTotal: 6, nextAction: 'Password vault checklist · 12 min' },
       { id: 'physical',  number: '04', label: 'PHYSICAL',  description: 'Belongings, ceremony preferences, location',    pct: 50,  status: 'available', unitDone: 2, unitTotal: 4, nextAction: 'Begin ceremony preferences' },
@@ -530,7 +530,7 @@ export default function EmployeeDashboard() {
 
         {state.nextActions.length === 0 ? (
           <p className="text-sm text-(--lr-pearl) opacity-80">
-            No outstanding actions. Your Final Playbook is complete.
+            No outstanding actions. Your FinalPlaybook is complete.
           </p>
         ) : (
           <div className="space-y-2">

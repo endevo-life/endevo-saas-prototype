@@ -111,7 +111,7 @@ ${inProgressModules.length === 0
       .join('\n')}
 
 ═══════════════════════════════════════════════════
-  This is your journey so far. The Final Playbook
+  This is your journey so far. The FinalPlaybook
   compiles itself once each domain is complete.
 ═══════════════════════════════════════════════════
 `;
@@ -130,7 +130,7 @@ ${inProgressModules.length === 0
   const isLocked = sectionsReady === 0;
 
   return (
-    <DashboardLayout title="Final Playbook" role="org_member">
+    <DashboardLayout title="FinalPlaybook" role="org_member">
       {/* Hero */}
       <section
         className="rounded-[18px] mb-7 px-8 py-8 relative overflow-hidden"
@@ -149,7 +149,7 @@ ${inProgressModules.length === 0
               Your compiled legacy
             </p>
             <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-4xl tracking-[0.06em] leading-tight">
-              Your Final Playbook
+              My FinalPlaybook
             </h2>
             <p className="text-(--lr-pearl) mt-3 max-w-md leading-relaxed opacity-90">
               {isComplete
@@ -161,7 +161,7 @@ ${inProgressModules.length === 0
 
             <div className="mt-6 flex items-center gap-3 flex-wrap">
               <button onClick={handleDownload} disabled={isLocked} className="lr-btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
-                {isLocked ? 'Locked — begin the path' : isComplete ? 'Download Final Playbook' : 'Download partial preview'}
+                {isLocked ? 'Locked — begin the path' : isComplete ? 'Download My FinalPlaybook' : 'Download partial preview'}
               </button>
               <button
                 onClick={handleInterimSummary}
@@ -245,7 +245,7 @@ ${inProgressModules.length === 0
           <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-[0.7rem] text-(--lr-gold) block mb-1">
             Yours alone
           </span>
-          The Final Playbook is generated entirely from the lessons you complete. It contains no PHI or PII you
+          The FinalPlaybook is generated entirely from the lessons you complete. It contains no PHI or PII you
           haven't entered yourself, and it is never visible to your employer, to XYZ Company, or to Endevo.
         </p>
       </div>

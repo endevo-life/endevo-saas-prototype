@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, ReactNode, useState, useMemo } from 'react';
-import { mockOrganizations } from '@/lib/mock-data';
+import { mockOrganizations, tenantHost } from '@/lib/mock-data';
 import ChatWidget from '@/components/ChatWidget';
 import LRMonogram from '@/components/common/LRMonogram';
 import {
@@ -108,7 +108,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
         return [
           { label: 'Today', path: '/org/member/dashboard' },
           { label: 'The Path', path: '/org/member/path' },
-          { label: 'Final Playbook', path: '/org/member/certificates' },
+          { label: 'Personalized Project Plan', path: '/org/member/certificates' },
           { label: 'Profile', path: '/org/member/profile' },
         ];
       default:
@@ -300,6 +300,15 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                 <p className="text-[0.65rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) font-(family-name:--font-jura)">
                   {organization?.name ?? 'Endevo Platform'}
                 </p>
+                {organization && role !== 'super_admin' && (
+                  <p
+                    className="text-[0.6rem] tracking-[0.04em] mt-0.5 font-(family-name:--font-jetbrains)"
+                    style={{ color: 'var(--lr-lavender-dust)' }}
+                    title="Tenant URL"
+                  >
+                    {tenantHost(organization.slug)}
+                  </p>
+                )}
               </div>
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center font-(family-name:--font-jura) text-sm tracking-wider"

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { mockOrganizations, Organization } from '@/lib/mock-data';
+import { mockOrganizations, Organization, tenantHost, tenantUrl } from '@/lib/mock-data';
 import { useToast } from '@/components/common/Toast';
 
 type Status = 'active' | 'suspended' | 'trial';
@@ -185,6 +185,41 @@ export default function AdminOrganizationsPage() {
                 </div>
               </div>
 
+              {/* Tenant identity — id + URL with copy */}
+              <div
+                className="rounded-[10px] px-3 py-2.5 mb-4 flex flex-col gap-2"
+                style={{ background: 'rgba(212,190,148,0.04)', border: '1px solid var(--border-subtle)' }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.22em] uppercase text-(--lr-gold-soft)">
+                    Tenant ID
+                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <code className="font-(family-name:--font-jetbrains) text-[0.7rem] text-(--lr-pearl) truncate">
+                      {org.id}
+                    </code>
+                    <CopyButton
+                      value={org.id}
+                      onCopied={() => toast(`${org.id} copied`, 'success')}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.22em] uppercase text-(--lr-gold-soft)">
+                    Tenant URL
+                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <code className="font-(family-name:--font-jetbrains) text-[0.7rem] text-(--lr-gold) truncate">
+                      {tenantHost(org.slug)}
+                    </code>
+                    <CopyButton
+                      value={tenantUrl(org.slug)}
+                      onCopied={() => toast(`${tenantHost(org.slug)} copied`, 'success')}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-xs">
                   <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-(--lr-gold-soft)">
@@ -286,6 +321,30 @@ export default function AdminOrganizationsPage() {
         />
       )}
     </DashboardLayout>
+  );
+}
+
+function CopyButton({ value, onCopied }: { value: string; onCopied: () => void }) {
+  return (
+    <button
+      onClick={() => {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          navigator.clipboard.writeText(value).then(onCopied).catch(() => onCopied());
+        } else {
+          onCopied();
+        }
+      }}
+      title={`Copy ${value}`}
+      aria-label={`Copy ${value}`}
+      className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.2em] uppercase px-2 py-1 rounded-[6px] transition-colors flex-shrink-0"
+      style={{
+        color: 'var(--lr-gold-soft)',
+        border: '1px solid var(--border-subtle)',
+        background: 'rgba(28,38,68,0.5)',
+      }}
+    >
+      Copy
+    </button>
   );
 }
 

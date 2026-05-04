@@ -157,7 +157,7 @@ export default function MemberProfilePage() {
                 {[
                   { label: 'Email updates',       desc: 'A note when something on your path moves.' },
                   { label: 'Lesson reminders',    desc: 'A gentle nudge when a lesson sits unfinished.' },
-                  { label: 'Playbook chapters',   desc: 'When a chapter of your Final Playbook is ready.' },
+                  { label: 'Playbook chapters',   desc: 'When a chapter of your FinalPlaybook is ready.' },
                   { label: 'Weekly reflection',   desc: 'A short summary every Sunday evening.' },
                 ].map((item) => (
                   <PrefRow key={item.label} label={item.label} desc={item.desc} />
@@ -273,7 +273,7 @@ export default function MemberProfilePage() {
           <span className="font-(family-name:--font-jura) tracking-[0.16em] uppercase text-[0.7rem] text-(--lr-gold) block mb-1">
             Your account, your control
           </span>
-          Your reflections, lesson notes, and Final Playbook content stay with you. Your employer sees only
+          Your reflections, lesson notes, and FinalPlaybook content stay with you. Your employer sees only
           completion status — never the contents of your path.
         </p>
       </div>
@@ -289,8 +289,7 @@ function Field({ label, value, readOnly }: { label: string; value: string; readO
       </span>
       <input
         type="text"
-        value={value}
-        readOnly={readOnly}
+        {...(readOnly ? { value, readOnly: true } : { defaultValue: value })}
         className="w-full rounded-[10px] px-4 py-2.5 text-sm text-(--lr-pearl) focus:outline-none focus:border-(--lr-gold) transition-colors"
         style={{
           background: readOnly ? 'rgba(28,38,68,0.4)' : 'rgba(28,38,68,0.7)',

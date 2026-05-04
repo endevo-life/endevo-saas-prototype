@@ -41,14 +41,14 @@ const totalProtected = cohortByDept.reduce((s, d) => s + d.protected, 0); // 141
 const startedDelta   = 23; // this week
 const protectedDelta = 12; // this month
 
-// Funnel — the journey from invitation to Final Playbook
+// Funnel — the journey from invitation to FinalPlaybook
 const funnel = [
   { label: 'Invited',                  count: 375 },
   { label: 'Started Assessment',       count: 278 },
   { label: 'Completed Assessment',     count: 211 },
   { label: 'Started Action Plan',      count: 167 },
   { label: 'Completed Action Plan',    count: 141 },
-  { label: 'Final Playbook ready',     count:  89 },
+  { label: 'FinalPlaybook ready',     count:  89 },
 ];
 
 // Cohort completion — three-way split for the donut
@@ -574,7 +574,7 @@ export default function AnalyticsPage() {
             Where do members fall off?
           </h3>
           <p className="text-xs text-(--lr-lavender-dust) mb-6 leading-relaxed">
-            Every step is the path from invitation to Final Playbook. The biggest drop-off tells you where to invest.
+            Every step is the path from invitation to FinalPlaybook. The biggest drop-off tells you where to invest.
           </p>
 
           <div className="space-y-2.5">
@@ -633,7 +633,7 @@ export default function AnalyticsPage() {
             <span className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase mr-2 text-(--lr-gold)">
               What this means
             </span>
-            The biggest drop is between <span className="text-(--lr-gold)">Completed Action Plan → Final Playbook</span> —
+            The biggest drop is between <span className="text-(--lr-gold)">Completed Action Plan → FinalPlaybook</span> —
             38% of starters finish their plan, but only 24% reach Playbook. A nudge program at week 3 could close this gap fastest.
           </p>
         </section>

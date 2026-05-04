@@ -115,7 +115,7 @@ export default function NotFound() {
                         onClick={() => router.push('/org/member/certificates')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        ★ Final Playbook
+                        ★ FinalPlaybook
                       </button>
                     </>
                   )}

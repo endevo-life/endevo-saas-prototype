@@ -26,7 +26,7 @@ const FEATURE_FLAGS: FeatureFlag[] = [
 ];
 
 const TIERS = [
-  { tier: 'Basic',        price: '$99/mo',   seats: '10',  features: 'Core 4 domains · Final Playbook' },
+  { tier: 'Basic',        price: '$99/mo',   seats: '10',  features: 'Core 4 domains · FinalPlaybook' },
   { tier: 'Professional', price: '$299/mo',  seats: '50',  features: 'Core + cohort analytics + exports' },
   { tier: 'Enterprise',   price: '$999/mo',  seats: '500', features: 'All + brand kit + audit streaming + SLA' },
 ];
@@ -121,7 +121,7 @@ export default function PlatformSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <Field label="Max tenants on platform" defaultValue="100" type="number" />
                 <Field label="Default seat limit per tenant" defaultValue="500" type="number" />
-                <Field label="Final Playbook retention (years)" defaultValue="7" type="number" />
+                <Field label="FinalPlaybook retention (years)" defaultValue="7" type="number" />
                 <Field label="Audit log retention (years)" defaultValue="7" type="number" />
               </div>
             </Section>

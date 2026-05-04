@@ -24,6 +24,16 @@ export interface Organization {
   createdAt: string;
 }
 
+// Multi-tenant URL convention. Each tenant gets a vanity subdomain on the
+// LRos parent domain. Derived from slug so renames stay in sync.
+export const TENANT_HOST = 'lros.endevo.com';
+export function tenantHost(slug: string): string {
+  return `${slug}.${TENANT_HOST}`;
+}
+export function tenantUrl(slug: string): string {
+  return `https://${tenantHost(slug)}`;
+}
+
 export interface Employee {
   id: string;
   organizationId: string;
