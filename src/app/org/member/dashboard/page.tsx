@@ -5,6 +5,7 @@ import { mockEmployees } from '@/lib/mock-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import LRMonogram from '@/components/common/LRMonogram';
+import { useEffect, useState } from 'react';
 
 type Band = 'AT_RISK' | 'STARTING' | 'PREPARED' | 'PROTECTED' | 'LEGACY_READY';
 type Level = 1 | 2 | 3 | 4;
@@ -240,6 +241,27 @@ export default function EmployeeDashboard() {
   const router = useRouter();
   const employee = mockEmployees.find((e) => e.id === user?.id);
   const progress = employee?.progressPercentage ?? 0;
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    const readTheme = () => {
+      const bodyTheme = document.body.getAttribute('data-theme');
+      if (bodyTheme === 'light' || bodyTheme === 'dark') {
+        setThemeMode(bodyTheme);
+        return;
+      }
+
+      const saved = localStorage.getItem('lr_theme');
+      setThemeMode(saved === 'light' ? 'light' : 'dark');
+    };
+
+    readTheme();
+
+    const observer = new MutationObserver(readTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   const state = deriveState(progress);
   const path = buildPath(progress);
@@ -590,7 +612,7 @@ export default function EmployeeDashboard() {
                   style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid rgba(212,190,148,0.22)' }}
                 >
                   <div className="flex justify-center mb-2 opacity-90">
-                    <LRMonogram size={36} />
+                    <LRMonogram size={36} themeMode={themeMode} />
                   </div>
                   <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-sm tracking-[0.05em]">
                     {b.label}

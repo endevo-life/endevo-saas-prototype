@@ -94,6 +94,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           { label: 'Users', path: '/superadmin/users' },
           { label: 'Analytics', path: '/superadmin/analytics' },
           { label: 'Audit Logs', path: '/superadmin/audit-logs' },
+          { label: 'Help Tickets', path: '/support' },
           { label: 'Settings', path: '/superadmin/settings' },
         ];
       case 'org_admin':
@@ -102,6 +103,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           { label: 'Members', path: '/org/admin/employees' },
           { label: 'Analytics', path: '/org/admin/analytics' },
           { label: 'Modules', path: '/org/admin/modules' },
+          { label: 'Help Tickets', path: '/support' },
           { label: 'Settings', path: '/org/admin/settings' },
         ];
       case 'org_member':
@@ -109,6 +111,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           { label: 'Today', path: '/org/member/dashboard' },
           { label: 'The Path', path: '/org/member/path' },
           { label: 'Personalized Project Plan', path: '/org/member/certificates' },
+          { label: 'Help Tickets', path: '/support' },
           { label: 'Profile', path: '/org/member/profile' },
         ];
       default:
@@ -146,7 +149,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
             </button>
 
             <div className="flex items-center space-x-3">
-              <LRMonogram size={36} />
+              <LRMonogram size={36} themeMode={theme} />
               <div className="hidden sm:flex flex-col leading-tight">
                 <span className="font-(family-name:--font-italiana) text-(--lr-gold) text-base tracking-[0.14em]">
                   LEGACY READINESS OS
@@ -177,6 +180,19 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
               )}
+            </button>
+
+            <button
+              onClick={() => router.push('/support')}
+              aria-label="Help and support"
+              title="Help and support"
+              className="p-2 rounded-lg hover:bg-(--surface-elevated) transition-colors"
+            >
+              <svg className="w-5 h-5 text-(--lr-gold)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9.09 9a3 3 0 115.82 1c0 2-3 2.5-3 4" />
+                <circle cx="12" cy="17" r="1" fill="currentColor" />
+                <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
+              </svg>
             </button>
 
             <div className="relative">
@@ -213,9 +229,15 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                   <div
                     className="absolute right-0 top-full mt-2 w-[360px] max-w-[92vw] z-40 rounded-[14px] overflow-hidden flex flex-col"
                     style={{
-                      background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+                      background:
+                        theme === 'light'
+                          ? 'linear-gradient(180deg, #FFFFFF 0%, var(--lr-midnight) 100%)'
+                          : 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
                       border: '1px solid var(--border-gold)',
-                      boxShadow: '0 24px 50px -18px rgba(0,0,0,0.55)',
+                      boxShadow:
+                        theme === 'light'
+                          ? '0 20px 44px -24px rgba(22,33,59,0.35)'
+                          : '0 24px 50px -18px rgba(0,0,0,0.55)',
                       maxHeight: 'min(520px, 80vh)',
                     }}
                   >
@@ -256,7 +278,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
                           <button
                             key={n.id}
                             onClick={() => handleNotifClick(n)}
-                            className="w-full text-left px-5 py-4 transition-colors hover:bg-white/[0.03]"
+                            className="w-full text-left px-5 py-4 transition-colors hover:bg-(--surface-elevated)"
                             style={{
                               borderTop: '1px solid var(--border-subtle)',
                               borderLeft: n.read ? '3px solid transparent' : `3px solid ${SEVERITY_DOT[n.severity]}`,

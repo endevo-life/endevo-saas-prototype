@@ -78,6 +78,7 @@ const PILLARS = [
 export default function Home() {
   const router = useRouter();
   const { user, login } = useAuth();
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selected, setSelected] = useState<string>('');
   const [pending, setPending] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -93,10 +94,17 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const saved = localStorage.getItem('lr_theme');
-    if (saved === 'light' || saved === 'dark') {
-      document.body.setAttribute('data-theme', saved);
-    }
+    const mode = saved === 'light' || saved === 'dark' ? saved : 'dark';
+    setTheme(mode);
+    document.body.setAttribute('data-theme', mode);
   }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('lr_theme', next);
+  };
 
   const handleEnter = () => {
     if (!selected || pending) return;
@@ -128,7 +136,7 @@ export default function Home() {
       {/* Top bar */}
       <header className="relative z-10 w-full px-8 pt-7 pb-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <LRMonogram size={36} priority />
+          <LRMonogram size={36} priority themeMode={theme} />
           <div>
             <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.06em] leading-none">
               Legacy Readiness OS
@@ -138,18 +146,43 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <a
-          href="https://link.endevo.life/widget/bookings/time-with-niki"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.18em] uppercase px-4 py-2 rounded-lg transition-all"
-          style={{
-            color: 'var(--lr-navy-deep)',
-            background: 'var(--lr-gold)',
-          }}
-        >
-          Book a call with Niki →
-        </a>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            className="p-2 rounded-lg transition-colors"
+            style={{
+              color: 'var(--lr-gold)',
+              border: '1px solid var(--border-gold)',
+              background: 'rgba(212,190,148,0.05)',
+            }}
+          >
+            {theme === 'dark' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4" strokeWidth={1.6} />
+                <path strokeLinecap="round" strokeWidth={1.6} d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4L7 17M17 7l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+
+          <a
+            href="https://link.endevo.life/widget/bookings/time-with-niki"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.18em] uppercase px-4 py-2 rounded-lg transition-all"
+            style={{
+              color: 'var(--lr-navy-deep)',
+              background: 'var(--lr-gold)',
+            }}
+          >
+            Book a call with Niki →
+          </a>
+        </div>
       </header>
 
       {/* Main two-column layout */}
@@ -243,7 +276,7 @@ export default function Home() {
           >
             {/* Panel header */}
             <div className="text-center">
-              <LRMonogram size={56} />
+              <LRMonogram size={56} themeMode={theme} />
               <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.06em] mt-3">
                 Platform Access
               </p>

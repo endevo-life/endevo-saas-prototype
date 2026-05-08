@@ -90,26 +90,26 @@ body[data-surface="light"] {
    etc. flips to dark-on-light without a refactor.
    ============================================ */
 body[data-theme="light"] {
-  /* Surfaces — flip the dark stack to ivory/pearl/white */
-  --lr-midnight:   #FCFAF5;   /* page background */
+  /* Surfaces — cool, crisp light foundation */
+  --lr-midnight:   #F4F7FC;   /* page background */
   --lr-navy-deep:  #FFFFFF;   /* card face */
-  --lr-navy-mid:   #F4F0E6;   /* elevated surface */
-  --lr-steel:      #485880;   /* mid-dark blue — unchanged, reads on both */
+  --lr-navy-mid:   #E9EEF8;   /* elevated surface */
+  --lr-steel:      #3F527A;
 
   /* Text — DARK on light (preference: dark text) */
-  --lr-pearl:         #1C2644;   /* was light text, now navy-deep */
-  --lr-lavender-dust: #5F5A64;   /* muted text — warm slate */
+  --lr-pearl:         #16213B;
+  --lr-lavender-dust: #5B6785;
 
   /* Accents — slightly darker gold so it earns its place on white */
-  --lr-gold:      #8C7547;
-  --lr-gold-soft: #6E5B36;
-  --lr-gold-pale: #B89A66;
+  --lr-gold:      #7B5C2E;
+  --lr-gold-soft: #5F4723;
+  --lr-gold-pale: #A88348;
 
   /* Re-bind semantic surfaces */
   --background:           var(--lr-midnight);
   --background-secondary: var(--lr-navy-deep);
   --surface:              var(--lr-navy-deep);
-  --surface-elevated:     #F0EBDC;
+  --surface-elevated:     #E4EAF6;
   --foreground:           var(--lr-pearl);
 
   /* Text semantic — primary headings stay gold (darkened),
@@ -119,8 +119,23 @@ body[data-theme="light"] {
   --text-muted:     var(--lr-warm-slate);
 
   /* Borders — flip from gold-on-dark to dark-on-light */
-  --border-subtle: rgba(28, 38, 68, 0.10);
-  --border-gold:   rgba(140, 117, 71, 0.55);
+  --border-subtle: rgba(22, 33, 59, 0.12);
+  --border-gold:   rgba(123, 92, 46, 0.38);
+}
+
+/* In light mode, avoid dark gradient cards inherited from dark-theme defaults. */
+body[data-theme="light"] .lr-card,
+body[data-theme="light"] .lr-card-elevated {
+  background: #FFFFFF;
+  color: var(--lr-pearl);
+  border: 1px solid var(--border-subtle);
+  box-shadow:
+    0 1px 0 rgba(22, 33, 59, 0.04),
+    0 18px 38px -28px rgba(22, 33, 59, 0.25);
+}
+
+body[data-theme="light"] .lr-separator {
+  opacity: 0.38;
 }
 
 /* Light-theme scrollbar — keep brand-aware */

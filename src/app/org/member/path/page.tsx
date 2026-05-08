@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/common/Toast';
 import LRMonogram from '@/components/common/LRMonogram';
+import { useEffect, useState } from 'react';
 
 type NodeStatus = 'complete' | 'current' | 'available' | 'locked';
 type StageId =
@@ -146,9 +147,29 @@ export default function LegacyPathTree() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
   const employee = mockEmployees.find((e) => e.id === user?.id);
   const progress = employee?.progressPercentage ?? 0;
   const stages = buildStages(progress);
+
+  useEffect(() => {
+    const readTheme = () => {
+      const bodyTheme = document.body.getAttribute('data-theme');
+      if (bodyTheme === 'light' || bodyTheme === 'dark') {
+        setThemeMode(bodyTheme);
+        return;
+      }
+      const saved = localStorage.getItem('lr_theme');
+      setThemeMode(saved === 'light' ? 'light' : 'dark');
+    };
+
+    readTheme();
+    const observer = new MutationObserver(readTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const isLight = themeMode === 'light';
 
   // ---- snake winding layout ----
   const COL_WIDTH = 540;
@@ -208,7 +229,9 @@ export default function LegacyPathTree() {
       <section
         className="rounded-[14px] mb-7 px-6 py-5 flex items-center justify-between flex-wrap gap-4"
         style={{
-          background: 'linear-gradient(135deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+          background: isLight
+            ? 'linear-gradient(135deg, #FFFFFF 0%, #F7F3E9 100%)'
+            : 'linear-gradient(135deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
           border: '1px solid var(--border-gold)',
         }}
       >
@@ -233,7 +256,9 @@ export default function LegacyPathTree() {
         <div
           className="rounded-[14px] p-6 overflow-x-auto"
           style={{
-            background: 'radial-gradient(ellipse at top, rgba(42,58,98,0.55) 0%, var(--lr-midnight) 70%)',
+            background: isLight
+              ? 'linear-gradient(180deg, #FFFFFF 0%, #F5F1E8 100%)'
+              : 'radial-gradient(ellipse at top, rgba(42,58,98,0.55) 0%, var(--lr-midnight) 70%)',
             border: '1px solid var(--border-subtle)',
           }}
         >
@@ -309,6 +334,8 @@ export default function LegacyPathTree() {
                     style={{
                       background: isComplete
                         ? 'var(--lr-gold)'
+                        : isLight
+                        ? 'linear-gradient(180deg, #FFFFFF 0%, #F3EEE2 100%)'
                         : 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
                       border: `2px solid ${pal.ring}`,
                       boxShadow: pal.glow,
@@ -316,7 +343,7 @@ export default function LegacyPathTree() {
                     }}
                   >
                     {stage.isCapstone ? (
-                      <LRMonogram size={Math.round(size * 0.55)} />
+                      <LRMonogram size={Math.round(size * 0.55)} themeMode={themeMode} />
                     ) : isComplete ? (
                       <>
                         <span className="font-(family-name:--font-jetbrains) text-(--lr-navy-deep) text-2xl leading-none">
@@ -582,7 +609,10 @@ function Mini({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="rounded-[10px] px-3 py-2 text-center"
-      style={{ background: 'rgba(212,190,148,0.08)', border: '1px solid var(--border-gold)' }}
+      style={{
+        background: 'color-mix(in srgb, var(--lr-gold) 10%, transparent)',
+        border: '1px solid var(--border-gold)',
+      }}
     >
       <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.22em] uppercase mb-0.5" style={{ color: 'var(--lr-gold-soft)' }}>
         {label}
