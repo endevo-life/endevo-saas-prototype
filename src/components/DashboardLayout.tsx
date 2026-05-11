@@ -112,7 +112,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
         return [
           { label: 'Today', path: '/org/member/dashboard' },
           { label: 'The Path', path: '/org/member/path' },
-          { label: 'Personalized Project Plan', path: '/org/member/certificates' },
+          { label: 'Project Plan', path: '/org/member/certificates' },
           { label: 'Help Tickets', path: '/support' },
           { label: 'Profile', path: '/org/member/profile' },
         ];
