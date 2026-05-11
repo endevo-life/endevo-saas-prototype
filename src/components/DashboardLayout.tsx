@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, ReactNode, useState, useMemo } from 'react';
 import { mockOrganizations, tenantHost } from '@/lib/mock-data';
 import ChatWidget from '@/components/ChatWidget';
-import LRMonogram from '@/components/common/LRMonogram';
+import { useDemoMode } from '@/lib/demo-mode';
+import Image from 'next/image';
 import {
   AppNotification,
   SEVERITY_DOT,
@@ -24,6 +25,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { demoMode, toggleDemoMode } = useDemoMode();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>('dark');
@@ -149,19 +151,35 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
             </button>
 
             <div className="flex items-center space-x-3">
-              <LRMonogram size={36} themeMode={theme} />
-              <div className="hidden sm:flex flex-col leading-tight">
-                <span className="font-(family-name:--font-italiana) text-(--lr-gold) text-base tracking-[0.14em]">
-                  LEGACY READINESS OS
-                </span>
-                <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust)">
-                  Powered by Endevo
-                </span>
-              </div>
+              <Image
+                src="/asset/dark_theme/SVG-02.svg"
+                alt="Legacy Readiness OS mark"
+                width={36}
+                height={36}
+                priority
+              />
+              <Image
+                src="/asset/dark_theme/SVG-01.svg"
+                alt="Legacy Readiness OS"
+                width={132}
+                height={22}
+                priority
+                className="hidden sm:block"
+              />
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
+            <button
+              onClick={toggleDemoMode}
+              aria-label={demoMode === 'focus' ? 'Switch to full product mode' : 'Switch to demo focus mode'}
+              title={demoMode === 'focus' ? 'Switch to full product mode' : 'Switch to demo focus mode'}
+              className="px-2.5 py-1.5 rounded-lg text-[0.58rem] tracking-[0.16em] uppercase font-(family-name:--font-jura) hover:bg-(--surface-elevated) transition-colors"
+              style={{ color: 'var(--lr-gold)', border: '1px solid var(--border-gold)' }}
+            >
+              {demoMode === 'focus' ? 'Demo Focus' : 'Full Product'}
+            </button>
+
             <button
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}

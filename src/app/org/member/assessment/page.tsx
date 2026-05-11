@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import LRMonogram from '@/components/common/LRMonogram';
+import { useDemoMode } from '@/lib/demo-mode';
 import {
   ASSESSMENT_DOMAINS,
   AssessmentDomain,
@@ -12,6 +13,9 @@ import {
   assignModulesFromScore,
   calculateAssessmentScore,
   calculateDomainScore,
+  getLegalMilestoneProgress,
+  getProjectSetupMilestones,
+  getLegalQuestionGuidance,
   getDomainProgress,
   getQuestionsForDomain,
 } from '@/lib/assessment-data';
@@ -22,15 +26,23 @@ type View = 'picker' | 'questions' | 'results';
 export default function AssessmentPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isDemoFocusMode } = useDemoMode();
 
   const [view, setView] = useState<View>('picker');
   const [activeDomain, setActiveDomain] = useState<AssessmentDomain | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const totalAnswered = Object.keys(answers).length;
-  const totalQuestions = assessmentQuestions.length;
-  const allComplete = ASSESSMENT_DOMAINS.every((d) => getDomainProgress(d.id, answers).complete);
+  const domainsInScope = isDemoFocusMode
+    ? ASSESSMENT_DOMAINS.filter((d) => d.id === 'legal')
+    : ASSESSMENT_DOMAINS;
+
+  const scopedQuestionIds = domainsInScope
+    .flatMap((d) => getQuestionsForDomain(d.id).map((q) => q.id));
+
+  const totalAnswered = scopedQuestionIds.filter((id) => Boolean(answers[id])).length;
+  const totalQuestions = scopedQuestionIds.length;
+  const allComplete = domainsInScope.every((d) => getDomainProgress(d.id, answers).complete);
 
   /* ──────────── handlers ──────────── */
 
@@ -93,10 +105,14 @@ export default function AssessmentPage() {
   if (view === 'results') {
     const overallScore = calculateAssessmentScore(answers);
     const assignedModules = assignModulesFromScore(overallScore, answers);
+    const legalMilestones = getLegalMilestoneProgress(answers);
+    const setupMilestones = getProjectSetupMilestones(overallScore, answers);
 
     return (
       <DashboardLayout title="Assessment Results" role="org_member">
         <div className="max-w-4xl mx-auto">
+          <FlowSteps current="results" />
+
           {/* Hero */}
           <section
             className="rounded-[18px] mb-7 px-8 py-9 relative overflow-hidden"
@@ -128,8 +144,127 @@ export default function AssessmentPage() {
             </div>
           </section>
 
+          {/* Legal milestones */}
+          <section
+            className="rounded-[14px] p-7 mb-8"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+              Legal domain milestones
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] mb-2">
+              Your legal readiness map
+            </h3>
+            <p className="text-sm text-(--lr-pearl) opacity-85 mb-5 leading-relaxed">
+              Based on your answers, these milestones show what is complete and what should be prioritized next.
+            </p>
+
+            <div className="space-y-3">
+              {legalMilestones.map((milestone) => (
+                <div
+                  key={milestone.id}
+                  className="rounded-[10px] px-4 py-4"
+                  style={{
+                    background: 'rgba(212,190,148,0.04)',
+                    border:
+                      milestone.status === 'complete'
+                        ? '1px solid var(--lr-gold)'
+                        : milestone.status === 'in_progress'
+                        ? '1px solid var(--border-gold)'
+                        : '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <p className="text-sm text-(--lr-pearl) font-(family-name:--font-jura) tracking-[0.06em]">
+                      {milestone.title}
+                    </p>
+                    <span className="font-(family-name:--font-jetbrains) text-xs text-(--lr-gold) whitespace-nowrap">
+                      {milestone.completion}%
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full mb-2" style={{ background: 'rgba(212,190,148,0.12)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${milestone.completion}%`, background: 'var(--lr-gold)' }}
+                    />
+                  </div>
+                  <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">
+                    {milestone.protectionRationale}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section
+            className="rounded-[14px] p-7 mb-8"
+            style={{
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+              Project setup milestones
+            </p>
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] mb-2">
+              Core setup for everyone
+            </h3>
+            <p className="text-sm text-(--lr-pearl) opacity-85 mb-5 leading-relaxed">
+              Three setup milestones are standard for everyone. Two additional boost milestones appear when readiness score is low.
+            </p>
+
+            <div className="space-y-3">
+              {setupMilestones.map((milestone) => (
+                <div
+                  key={milestone.id}
+                  className="rounded-[10px] px-4 py-4"
+                  style={{
+                    background: 'rgba(212,190,148,0.04)',
+                    border:
+                      milestone.status === 'complete'
+                        ? '1px solid var(--lr-gold)'
+                        : milestone.status === 'in_progress'
+                        ? '1px solid var(--border-gold)'
+                        : milestone.status === 'recommended'
+                        ? '1px dashed var(--border-gold)'
+                        : '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <p className="text-sm text-(--lr-pearl) font-(family-name:--font-jura) tracking-[0.06em]">
+                      {milestone.title}
+                    </p>
+                    <span className="font-(family-name:--font-jura) text-[0.58rem] tracking-[0.2em] uppercase text-(--lr-gold-soft) whitespace-nowrap">
+                      {milestone.tier === 'boost' ? 'Boost' : 'Standard'}
+                    </span>
+                  </div>
+
+                  {milestone.status !== 'recommended' && (
+                    <div className="w-full h-1.5 rounded-full mb-2" style={{ background: 'rgba(212,190,148,0.12)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${milestone.completion}%`, background: 'var(--lr-gold)' }}
+                      />
+                    </div>
+                  )}
+
+                  <p className="text-xs text-(--lr-lavender-dust) leading-relaxed mb-1">
+                    {milestone.why}
+                  </p>
+                  <p className="text-xs text-(--lr-pearl) leading-relaxed">
+                    <span className="text-(--lr-gold)">Action: </span>
+                    {milestone.action}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* Per-domain dials */}
-          <section className="mb-8">
+          {!isDemoFocusMode && <section className="mb-8">
             <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
               By domain
             </p>
@@ -162,7 +297,7 @@ export default function AssessmentPage() {
                 );
               })}
             </div>
-          </section>
+          </section>}
 
           {/* Personalised modules */}
           <section
@@ -236,6 +371,7 @@ export default function AssessmentPage() {
   if (view === 'questions' && activeDomain) {
     const qs = getQuestionsForDomain(activeDomain);
     const currentQ = qs[questionIndex];
+    const legalGuidance = activeDomain === 'legal' ? getLegalQuestionGuidance(currentQ.id) : null;
     const domain = ASSESSMENT_DOMAINS.find((d) => d.id === activeDomain)!;
     const currentAnswer = answers[currentQ.id];
     const isLastInDomain = questionIndex === qs.length - 1;
@@ -244,6 +380,8 @@ export default function AssessmentPage() {
     return (
       <DashboardLayout title="Peace of Mind Assessment" role="org_member">
         <div className="max-w-3xl mx-auto">
+          <FlowSteps current="questions" />
+
           {/* Domain header strip */}
           <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
             <button
@@ -284,6 +422,30 @@ export default function AssessmentPage() {
                 {currentQ.questionText}
               </h2>
             </div>
+
+            {legalGuidance && (
+              <div
+                className="rounded-[12px] px-5 py-4 mb-6"
+                style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+              >
+                <p className="text-xs text-(--lr-lavender-dust) leading-relaxed mb-2">
+                  <span className="text-(--lr-gold-soft)">Why it matters: </span>
+                  {legalGuidance.riskNudge}
+                </p>
+                <p className="text-xs text-(--lr-lavender-dust) leading-relaxed mb-2">
+                  <span className="text-(--lr-gold-soft)">Quick prompt: </span>
+                  {legalGuidance.microPrompt}
+                </p>
+                <p className="text-xs text-(--lr-lavender-dust) leading-relaxed mb-2">
+                  <span className="text-(--lr-gold-soft)">Success check: </span>
+                  {legalGuidance.successCheck}
+                </p>
+                <p className="text-xs text-(--lr-pearl) leading-relaxed">
+                  <span className="text-(--lr-gold)">Next action: </span>
+                  {legalGuidance.nextAction}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2.5 mb-7">
               {currentQ.options.map((option) => {
@@ -345,6 +507,8 @@ export default function AssessmentPage() {
   return (
     <DashboardLayout title="Peace of Mind Assessment" role="org_member">
       <div className="max-w-5xl mx-auto">
+        <FlowSteps current="picker" />
+
         {/* Hero */}
         <section
           className="rounded-[18px] mb-7 px-8 py-8 relative overflow-hidden"
@@ -362,11 +526,12 @@ export default function AssessmentPage() {
               Begin your assessment
             </p>
             <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-4xl tracking-[0.05em] leading-tight max-w-2xl">
-              Choose where to begin, {user?.firstName ?? 'friend'}
+              {isDemoFocusMode ? 'Begin with Legal domain' : `Choose where to begin, ${user?.firstName ?? 'friend'}`}
             </h2>
             <p className="text-(--lr-pearl) mt-3 max-w-2xl leading-relaxed opacity-90">
-              Four domains shape your Legacy Path. Take them in any order — pause and return whenever the moment is right.
-              Each domain takes only a few minutes.
+              {isDemoFocusMode
+                ? 'This demo uses the same flow in a 10-question Legal slice. Start with Legal to generate milestones and your personalized plan.'
+                : 'Four domains shape your Legacy Path. Take them in any order — pause and return whenever the moment is right. Each domain takes only a few minutes.'}
             </p>
 
             <div className="mt-5 flex items-center gap-5 flex-wrap">
@@ -398,7 +563,7 @@ export default function AssessmentPage() {
           </h3>
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {ASSESSMENT_DOMAINS.map((d) => {
+            {domainsInScope.map((d) => {
               const { answered, total, complete } = getDomainProgress(d.id, answers);
               const inProgress = answered > 0 && !complete;
               const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
@@ -583,5 +748,48 @@ function DomainNode({ pct, status, size = 120 }: { pct: number; status: 'complet
         </text>
       )}
     </svg>
+  );
+}
+
+function FlowSteps({ current }: { current: 'picker' | 'questions' | 'results' }) {
+  const steps = [
+    { id: 'picker', label: 'Choose Domain' },
+    { id: 'questions', label: 'Answer Questions' },
+    { id: 'results', label: 'See Plan' },
+  ] as const;
+
+  return (
+    <div
+      className="rounded-[12px] px-4 py-3 mb-5"
+      style={{ background: 'rgba(212,190,148,0.05)', border: '1px solid var(--border-subtle)' }}
+    >
+      <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+        {steps.map((step, index) => {
+          const active = step.id === current;
+          const done = steps.findIndex((s) => s.id === current) > index;
+          return (
+            <div key={step.id} className="flex items-center gap-2 shrink-0">
+              <span
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-(family-name:--font-jetbrains)"
+                style={{
+                  background: done || active ? 'var(--lr-gold)' : 'rgba(212,190,148,0.08)',
+                  color: done || active ? 'var(--lr-navy-deep)' : 'var(--lr-lavender-dust)',
+                  border: done || active ? '1px solid var(--lr-gold)' : '1px solid var(--border-subtle)',
+                }}
+              >
+                {done ? '✓' : index + 1}
+              </span>
+              <span
+                className="text-[0.65rem] font-(family-name:--font-jura) tracking-[0.16em] uppercase"
+                style={{ color: active ? 'var(--lr-gold)' : 'var(--lr-lavender-dust)' }}
+              >
+                {step.label}
+              </span>
+              {index < steps.length - 1 && <span className="text-(--lr-lavender-dust) text-xs">→</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

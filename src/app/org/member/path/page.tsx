@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/common/Toast';
 import LRMonogram from '@/components/common/LRMonogram';
 import { useEffect, useState } from 'react';
+import { useDemoMode } from '@/lib/demo-mode';
 
 type NodeStatus = 'complete' | 'current' | 'available' | 'locked';
 type StageId =
@@ -147,6 +148,7 @@ export default function LegacyPathTree() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { isDemoFocusMode } = useDemoMode();
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
   const employee = mockEmployees.find((e) => e.id === user?.id);
   const progress = employee?.progressPercentage ?? 0;
@@ -457,7 +459,7 @@ export default function LegacyPathTree() {
           </div>
 
           {/* Streak Shield */}
-          <div
+          {!isDemoFocusMode && <div
             className="rounded-[14px] p-5"
             style={{
               background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
@@ -497,10 +499,10 @@ export default function LegacyPathTree() {
             >
               Arm shield (1 available)
             </button>
-          </div>
+          </div>}
 
           {/* Cohort Circle */}
-          <div
+          {!isDemoFocusMode && <div
             className="rounded-[14px] p-5"
             style={{
               background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
@@ -542,10 +544,10 @@ export default function LegacyPathTree() {
               <span className="text-(--lr-gold)">14 colleagues</span> at XYZ Company are practising this week.
               No names ranked. No content shared.
             </p>
-          </div>
+          </div>}
 
           {/* Letter Vault */}
-          <div
+          {!isDemoFocusMode && <div
             className="rounded-[14px] p-5"
             style={{
               background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
@@ -598,7 +600,7 @@ export default function LegacyPathTree() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
         </aside>
       </div>
     </DashboardLayout>

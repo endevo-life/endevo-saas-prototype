@@ -1,35 +1,34 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Jura, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/common/Toast";
 
-// Display serif — Playfair Display replaces Italiana for readability.
-// Variable name kept as --font-italiana to avoid touching 59 references.
-const italiana = Playfair_Display({
+// Use Playfair for major headings and Inter for all body/labels for readability.
+const readableDisplay = Playfair_Display({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["600", "700"],
   variable: "--font-italiana",
   display: "swap",
 });
 
-const jura = Jura({
+const readableLabel = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jura",
   display: "swap",
 });
 
-const instrumentSans = Instrument_Sans({
+const readableBody = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-instrument",
   display: "swap",
 });
 
-const jetBrainsMono = JetBrains_Mono({
+const readableMono = Inter({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jetbrains",
   display: "swap",
 });
@@ -39,9 +38,9 @@ export const metadata: Metadata = {
   description:
     "Legacy Readiness OS — the platform for modern, dignified life-readiness across Legal, Financial, Digital, and Physical domains.",
   icons: {
-    icon: "/asset/favicon-logo.png",
-    shortcut: "/asset/favicon-logo.png",
-    apple: "/asset/favicon-logo-large.png",
+    icon: "/asset/dark_theme/SVG-02.svg",
+    shortcut: "/asset/dark_theme/SVG-02.svg",
+    apple: "/asset/dark_theme/SVG-02.svg",
   },
 };
 
@@ -53,7 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${italiana.variable} ${jura.variable} ${instrumentSans.variable} ${jetBrainsMono.variable}`}
+      className={`${readableDisplay.variable} ${readableLabel.variable} ${readableBody.variable} ${readableMono.variable}`}
     >
       <body>
         <AuthProvider>

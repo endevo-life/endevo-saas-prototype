@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import LRMonogram from '@/components/common/LRMonogram';
+import Image from 'next/image';
 
 interface Persona {
   email: string;
@@ -78,7 +79,11 @@ const PILLARS = [
 export default function Home() {
   const router = useRouter();
   const { user, login } = useAuth();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    const saved = localStorage.getItem('lr_theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  });
   const [selected, setSelected] = useState<string>('');
   const [pending, setPending] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -93,11 +98,8 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('lr_theme');
-    const mode = saved === 'light' || saved === 'dark' ? saved : 'dark';
-    setTheme(mode);
-    document.body.setAttribute('data-theme', mode);
-  }, []);
+    document.body.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -118,33 +120,14 @@ export default function Home() {
     <div
       className="min-h-screen relative overflow-hidden flex flex-col"
       style={{
-        background:
-          'radial-gradient(ellipse at 30% 50%, var(--lr-navy-mid) 0%, var(--lr-midnight) 55%, var(--lr-navy-deep) 100%)',
+        background: 'var(--lr-midnight)',
       }}
     >
-      {/* Decorative concentric rings — positioned left to bleed into left panel */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-start opacity-[0.06]" style={{ left: '-10vw' }}>
-        {[120, 90, 60, 32].map((size) => (
-          <div
-            key={size}
-            className="absolute rounded-full"
-            style={{ width: `${size}vh`, height: `${size}vh`, border: '1px solid var(--lr-gold)' }}
-          />
-        ))}
-      </div>
-
       {/* Top bar */}
       <header className="relative z-10 w-full px-8 pt-7 pb-0 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <LRMonogram size={36} priority themeMode={theme} />
-          <div>
-            <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.06em] leading-none">
-              Legacy Readiness OS
-            </p>
-            <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.24em] uppercase text-(--lr-gold-soft) mt-0.5">
-              Powered by Endevo
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <LRMonogram size={52} priority themeMode={theme} />
+          <LRMonogram variant="lockup" size={20} priority themeMode={theme} />
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -198,14 +181,14 @@ export default function Home() {
 
           {/* Headline */}
           <h1
-            className="font-(family-name:--font-italiana) leading-[1.1] tracking-[0.04em] mb-6"
-            style={{ fontSize: 'clamp(2.2rem, 4vw, 3.4rem)', color: 'var(--lr-gold)' }}
+            className="font-(family-name:--font-italiana) leading-[1.08] tracking-[0.03em] mb-6 font-bold"
+            style={{ fontSize: 'clamp(2.45rem, 4.4vw, 3.8rem)', color: 'var(--lr-gold)' }}
           >
             Your employees<br />deserve to be ready.
           </h1>
 
           {/* Sub-headline */}
-          <p className="font-(family-name:--font-jura) text-(--lr-pearl) tracking-[0.06em] text-base leading-relaxed mb-8 opacity-90">
+          <p className="font-(family-name:--font-jura) text-(--lr-pearl) tracking-[0.04em] text-lg leading-relaxed mb-8 opacity-95">
             Legacy Readiness OS is an HR benefit that guides your workforce through
             the legal, financial, digital, and physical decisions they&apos;ve been
             putting off — before a crisis forces their hand.
@@ -224,11 +207,11 @@ export default function Home() {
               >
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-(--lr-gold) text-base leading-none">{p.icon}</span>
-                  <p className="font-(family-name:--font-jura) text-[0.7rem] tracking-[0.18em] uppercase text-(--lr-gold)">
+                  <p className="font-(family-name:--font-jura) text-[0.78rem] tracking-[0.14em] uppercase text-(--lr-gold) font-semibold">
                     {p.title}
                   </p>
                 </div>
-                <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">{p.body}</p>
+                <p className="text-sm text-(--lr-lavender-dust) leading-relaxed">{p.body}</p>
               </div>
             ))}
           </div>
@@ -237,10 +220,10 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {STATS.map((s) => (
               <div key={s.value} className="text-center">
-                <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-2xl leading-none">
+                <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-[1.8rem] leading-none font-semibold">
                   {s.value}
                 </p>
-                <p className="text-[0.65rem] text-(--lr-lavender-dust) leading-snug mt-1.5">
+                <p className="text-[0.78rem] text-(--lr-lavender-dust) leading-snug mt-1.5">
                   {s.label}
                 </p>
               </div>
@@ -249,7 +232,7 @@ export default function Home() {
 
           <hr className="lr-separator mb-6" />
 
-          <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">
+          <p className="text-sm text-(--lr-lavender-dust) leading-relaxed">
             Trusted by HR leaders at companies ranging from 25 to 375+ employees.
             Pilot programs available Q2 2026.{' '}
             <a
@@ -276,11 +259,14 @@ export default function Home() {
           >
             {/* Panel header */}
             <div className="text-center">
-              <LRMonogram size={56} themeMode={theme} />
-              <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.06em] mt-3">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <LRMonogram size={68} themeMode={theme} priority />
+                <LRMonogram variant="lockup" size={30} themeMode={theme} priority />
+              </div>
+              <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-[1.95rem] tracking-[0.02em] mt-4 font-bold">
                 Platform Access
               </p>
-              <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-gold-soft) mt-1">
+              <p className="font-(family-name:--font-jura) text-[0.74rem] tracking-[0.14em] uppercase text-(--lr-gold-soft) mt-1">
                 Interactive Demo Environment
               </p>
             </div>
@@ -289,7 +275,7 @@ export default function Home() {
 
             {/* Dropdown */}
             <div className="flex flex-col gap-2">
-              <label className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.22em] uppercase text-(--lr-gold-soft)">
+              <label className="font-(family-name:--font-jura) text-[0.74rem] tracking-[0.16em] uppercase text-(--lr-gold-soft) font-semibold">
                 Select a persona to explore
               </label>
 
@@ -310,7 +296,7 @@ export default function Home() {
                   <div className="min-w-0">
                     {selectedPersona ? (
                       <>
-                        <p className="text-sm font-(family-name:--font-jura) tracking-[0.04em] truncate">
+                        <p className="text-base font-(family-name:--font-jura) tracking-[0.02em] truncate font-semibold">
                           {selectedPersona.label}
                         </p>
                         <p className="text-[0.65rem] text-(--lr-gold-soft) tracking-[0.14em] mt-0.5 truncate">
@@ -318,7 +304,7 @@ export default function Home() {
                         </p>
                       </>
                     ) : (
-                      <p className="text-sm font-(family-name:--font-jura) tracking-[0.04em]">
+                      <p className="text-base font-(family-name:--font-jura) tracking-[0.02em]">
                         Choose who you want to be…
                       </p>
                     )}
@@ -388,7 +374,7 @@ export default function Home() {
             <button
               onClick={handleEnter}
               disabled={!selected || pending}
-              className="w-full py-3.5 rounded-[10px] font-(family-name:--font-jura) text-[0.75rem] tracking-[0.22em] uppercase transition-all"
+              className="w-full py-3.5 rounded-[10px] font-(family-name:--font-jura) text-[0.84rem] tracking-[0.16em] uppercase transition-all font-semibold"
               style={{
                 background: selected && !pending ? 'var(--lr-gold)' : 'rgba(212,190,148,0.2)',
                 color: selected && !pending ? 'var(--lr-navy-deep)' : 'var(--lr-lavender-dust)',
@@ -408,24 +394,24 @@ export default function Home() {
                 }}
               >
                 {selectedPersona.variant === 'org_admin' && (
-                  <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">
+                  <p className="text-sm text-(--lr-lavender-dust) leading-relaxed">
                     <span className="text-(--lr-gold)">HR Admin view</span> — aggregate workforce readiness analytics, member roster management, and department-level breakdowns. Never sees individual answers.
                   </p>
                 )}
                 {selectedPersona.variant === 'member' && (
-                  <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">
+                  <p className="text-sm text-(--lr-lavender-dust) leading-relaxed">
                     <span className="text-(--lr-gold)">Employee view</span> — personal Legacy Path, domain assessments, learning modules, and FinalPlaybook. Fully private to the member.
                   </p>
                 )}
                 {selectedPersona.variant === 'super_admin' && (
-                  <p className="text-xs text-(--lr-lavender-dust) leading-relaxed">
+                  <p className="text-sm text-(--lr-lavender-dust) leading-relaxed">
                     <span className="text-(--lr-gold)">Platform operator view</span> — multi-tenant management across all employer accounts, audit logs, and platform health.
                   </p>
                 )}
               </div>
             )}
 
-            <p className="text-center text-[0.65rem] text-(--lr-lavender-dust) leading-relaxed">
+            <p className="text-center text-[0.78rem] text-(--lr-lavender-dust) leading-relaxed">
               Private demo environment · No PHI or PII captured<br />
               <span className="text-(--lr-gold-soft)">Legacy Readiness OS · Powered by Endevo</span>
             </p>
@@ -433,7 +419,7 @@ export default function Home() {
 
           {/* Below card: call to action */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-(--lr-lavender-dust)">
+            <p className="text-sm text-(--lr-lavender-dust)">
               Interested in offering this as an employee benefit?
             </p>
             <a
@@ -449,13 +435,50 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full px-8 py-5 flex items-center justify-between">
-        <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.22em] uppercase text-(--lr-gold-soft)">
-          Eternal Geometry · v3.0
-        </p>
-        <p className="text-[0.65rem] text-(--lr-lavender-dust)">
-          © 2026 Endevo · All rights reserved
-        </p>
+      <footer className="relative z-10 w-full px-8 py-5 border-t border-(--border-subtle)">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+          <a
+            href="https://endevo.life"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Visit ENDevo.life website"
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+          >
+            <span className="text-[0.72rem] text-(--lr-lavender-dust)">Powered by</span>
+            <Image
+              src="/asset/endevo-logo-xlarge.png"
+              alt="ENDevo"
+              width={180}
+              height={40}
+              className="h-8 w-auto"
+            />
+          </a>
+
+          <div className="text-center md:text-right">
+            <p className="text-[0.74rem] text-(--lr-lavender-dust)">© 2026 ENDevo · All rights reserved</p>
+            <div className="mt-0.5 flex items-center justify-center md:justify-end gap-2 text-[0.74rem]">
+              <a
+                href="https://endevo.life"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="ENDevo official website"
+                className="text-(--lr-gold-soft) hover:text-(--lr-gold) transition-colors"
+              >
+                ENDevo.life
+              </a>
+              <span className="text-(--lr-lavender-dust)">·</span>
+              <a
+                href="https://endevo.life/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Read ENDevo privacy policy"
+                className="text-(--lr-gold-soft) hover:text-(--lr-gold) transition-colors"
+              >
+                Privacy Policy
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

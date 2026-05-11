@@ -1,0 +1,211 @@
+# LEGACY READINESS OS — Brand Guide
+
+### *Eternal Geometry* | Version 3.0
+
+---
+
+**Legacy Readiness OS** — Powered by Endevo
+April 2026 | Prepared by Nermeen — CTO & Solution Architect, Endevo Life
+
+---
+
+## 1. Design Philosophy
+
+**Eternal Geometry** — where readiness becomes permanence, and order becomes legacy.
+
+Eternal Geometry begins with a paradox: that the most profound way to honor what endures is to celebrate what is alive. The movement draws its visual vocabulary from the architecture of continuity — concentric forms that echo outward like ripples from a stone dropped in still water, interlocking geometries that suggest one life's order becoming another's foundation. Every composition is constructed with the painstaking precision of a master engraver working on a timepiece meant to outlast its maker.
+
+Color operates as emotional cartography. Deep midnight blue serves as the foundational chromatic field — the infinite, breathing blue of a clear sky at the boundary between dusk and darkness. Warm champagne gold enters as luminous counterpoint: the precise warmth of candlelight on old paper, of inherited things that carry meaning beyond their material.
+
+The philosophy demands "luminous gravity" — compositions that feel both substantial and light, grounded and elevated. Like the best memorial architecture, the work achieves emotional power through restraint, geometry, and material honesty rather than through dramatic gesture or symbolic excess.
+
+---
+
+## 2. Color Palette
+
+### Primary Blues
+
+The foundational chromatic field. These blues create depth, authority, and trust — the gravitational center of every composition.
+
+| Swatch | Name | Hex | RGB |
+|--------|------|-----|-----|
+| | Midnight Blue | `#12162A` | RGB(18, 22, 42) |
+| | **Navy Deep — PRIMARY** | `#1C2644` | RGB(28, 38, 68) |
+| | Navy Mid | `#2A3A62` | RGB(42, 58, 98) |
+| | Steel Blue | `#485880` | RGB(72, 88, 128) |
+
+### Champagne Gold Accents
+
+The luminous counterpoint. Champagne gold brings warmth, elegance, and the feeling of candlelight on old paper — inherited things that carry meaning.
+
+| Swatch | Name | Hex | RGB |
+|--------|------|-----|-----|
+| | **Champagne Gold — SIGNATURE** | `#D4BE94` | RGB(212, 190, 148) |
+| | Soft Gold | `#C3AC80` | RGB(195, 172, 128) |
+| | Pale Gold | `#E4D7B9` | RGB(228, 215, 185) |
+
+### Neutrals
+
+Transitional tones that prevent starkness and inject quiet humanity. They create breathing room between the dominant blues and golds.
+
+| Swatch | Name | Hex | RGB |
+|--------|------|-----|-----|
+| | Charcoal | `#232026` | RGB(35, 32, 38) |
+| | Warm Slate | `#5F5A64` | RGB(95, 90, 100) |
+| | Lavender Dust | `#B4AFC3` | RGB(180, 175, 195) |
+| | Pearl | `#EBE8E1` | RGB(235, 232, 225) |
+| | Ivory | `#FCFAF5` | RGB(252, 250, 245) |
+
+### Core Color Pairings
+
+**Primary Pairing:** Navy Deep (#1C2644) + Champagne Gold (#D4BE94) — the signature combination for all primary brand touchpoints.
+
+**Dark Mode:** Midnight Blue (#12162A) background + Champagne Gold (#D4BE94) text and accents + Pearl (#EBE8E1) body copy.
+
+**Light Mode:** Ivory (#FCFAF5) background + Navy Deep (#1C2644) text + Champagne Gold (#D4BE94) accents.
+
+**Contrast Rule:** Champagne Gold on Navy Deep — never the reverse for body text. Gold text only on dark backgrounds at 18pt or larger.
+
+---
+
+## 3. Typography System
+
+Typography exists at two extremes — monumental single words or whispered annotations — never in the middle register of ordinary communication. When text appears, it functions as inscription rather than information: carved, considered, permanent.
+
+### Primary Heading: Italiana
+
+Used for the brand name and major display text. Italiana is an elegant serif with fine strokes that evoke engraved timepieces and architectural inscriptions. Used at large sizes only (36pt+). Always uppercase for the monogram and brand name.
+
+### Tagline & Subheadings: Jura Light/Medium
+
+Jura provides a clean, modern geometric counterpoint to Italiana's classical elegance. Used for taglines, section labels, and navigational text. Light weight for taglines, Medium for emphasis. Letter-spacing: +2-3%.
+
+### Body Copy: Instrument Sans
+
+A contemporary sans-serif for all body text, descriptions, and interface copy. Regular weight for body, Bold for emphasis. Comfortable reading at 11-14pt. Line height: 1.5-1.6x.
+
+### Data & Scores: JetBrains Mono
+
+Monospace font for the Readiness Score, numerical data, and technical labels. Communicates precision and system-level credibility. Always in Champagne Gold on dark backgrounds.
+
+### Type Hierarchy
+
+| Element | Font | Weight | Size | Color |
+|---------|------|--------|------|-------|
+| Brand Name | Italiana | Regular | 36-48pt | Champagne Gold |
+| Tagline | Jura | Light | 14-18pt | Warm Slate |
+| Section Heading | Jura | Medium | 16-22pt | Navy Deep |
+| Body Copy | Instrument Sans | Regular | 11-14pt | Charcoal |
+| Emphasis | Instrument Sans | Bold | 11-14pt | Navy Deep |
+| Data / Scores | JetBrains Mono | Regular | 14-24pt | Champagne Gold |
+| Domain Labels | Jura | Medium | 10-12pt | Steel Blue |
+
+---
+
+## 4. Shape Language
+
+Every visual element in Eternal Geometry is rooted in a precise geometric vocabulary. These forms are not decorative — they are structural philosophy made visible.
+
+### Concentric Rings
+
+The primary motif. Concentric circles radiating outward suggest continuity, growth rings, orbits, and ripples from a stone dropped in still water. Rings should fade in opacity from center to edge (100% to 15%), creating depth through translucency. Minimum 3 rings, maximum 7 for any composition.
+
+### Clock-Face Tick Marks
+
+12 evenly-spaced tick marks at 30 degree intervals, skipping the four cardinal points (12, 3, 6, 9 o'clock). These suggest time, precision, and the measured passage of moments. Ticks are rendered in Champagne Gold at 60-80% opacity.
+
+### Diamond Markers
+
+Small diamond shapes placed at the four cardinal points of the outermost ring. Each diamond represents one of the four life domains: Legal (top), Financial (right), Digital (bottom), Physical (left). Rendered as 45-degree-rotated squares in Champagne Gold.
+
+### Golden Cross / Compass Crosshair
+
+Subtle orthogonal lines extending through the center of the ring system. This element anchors the composition and suggests navigation, orientation, and the intersection of life domains. Rendered at very low opacity (15-25%) in Champagne Gold.
+
+### Tapered Separators
+
+Horizontal dividers that fade from full opacity at center to transparent at edges. Used between sections of text. Created using per-pixel opacity gradients in Champagne Gold. These replace hard rules and add elegance to layouts.
+
+---
+
+## 5. Logo System
+
+The Legacy Readiness OS logo is a monogram-based mark built from the letters L and R, enclosed within the concentric ring system. The monogram is constructed with geometric precision — rectangles, arcs, and carefully measured proportions that give the letterforms architectural weight.
+
+### Primary Logo
+The full primary mark on ivory background. Use this as the default logo wherever possible.
+
+### Icon Mark
+Square format for app icons, favicons, and social media profiles. Transparent background. Minimum size: 32px.
+
+### Dark Background Version
+For use on Midnight Blue or dark surfaces. The concentric rings and monogram render in Champagne Gold and Pearl.
+
+### Light Background Version
+For use on white or light surfaces. Full color mark with Navy Deep as the dominant tone.
+
+### Endevo Lockup
+The full brand hierarchy including the four life domain labels and "Powered by Endevo" attribution. Use for formal presentations, partnership materials, and pitch decks.
+
+---
+
+## 6. Logo Usage Rules
+
+### Clear Space
+Maintain a minimum clear space equal to the height of the "L" in the monogram on all sides. No other visual elements, text, or edges should intrude into this space.
+
+### Minimum Size
+Primary logo: minimum 120px wide (digital) or 1.5 inches (print). Icon mark: minimum 32px (digital) or 0.4 inches (print). Below these sizes, the concentric ring detail is lost.
+
+### Approved Backgrounds
+
+**Preferred:** Ivory (#FCFAF5), White (#FFFFFF), Midnight Blue (#12162A), Navy Deep (#1C2644).
+
+**Acceptable:** Pearl (#EBE8E1), photography with sufficient contrast (test at 50% scale).
+
+**Never:** Bright colors, busy patterns, gradients that compete with the ring system, or backgrounds below 4.5:1 contrast ratio.
+
+### Do Not
+
+- Rotate, skew, or distort the logo in any way.
+- Change the colors of the monogram or rings independently.
+- Add drop shadows, outlines, or effects to the logo.
+- Place the logo inside a container or shape that competes with the ring system.
+- Use the icon mark at sizes where the ring detail becomes a blur.
+- Separate the monogram from the ring system — they are one unified mark.
+
+---
+
+## 7. Brand Hierarchy
+
+Legacy Readiness OS is the consumer-facing brand. Endevo is the technology engine underneath. The relationship is always expressed as:
+
+> **LEGACY READINESS OS**
+> *Powered by Endevo*
+
+The four life domains are always presented in consistent order and numbering:
+
+**01 LEGAL . 02 FINANCIAL . 03 DIGITAL . 04 PHYSICAL**
+
+Domain labels are always uppercase, numbered, and separated by centered dots. They appear below the logo in the full lockup and can be used independently in section headers and navigation.
+
+---
+
+## 8. Visual-Voice Alignment
+
+The Eternal Geometry design system is the visual expression of the Legacy Readiness OS brand voice. Every design choice maps to a voice attribute:
+
+| Voice Attribute | Visual Expression | Design Element |
+|----------------|-------------------|----------------|
+| Empowering | Structural precision, upward geometry | Concentric rings expanding outward |
+| Warm & Human | Champagne gold warmth, soft transitions | Gold accents, gradient opacity fades |
+| Life-Focused | Luminous gravity, light within depth | Ivory backgrounds, golden crosshairs |
+| Modern & Credible | Geometric rigor, monospace data | Clock ticks, JetBrains Mono scores |
+| Proactive | Cardinal diamonds pointing four directions | Four domain markers, compass motif |
+| Inclusive | Neutral palette, universal geometry | No cultural symbols, abstract forms |
+
+---
+
+*LEGACY READINESS OS — Eternal Geometry — Brand Guide v3.0*
+*Powered by Endevo | April 2026*
+*Prepared by Nermeen — CTO & Solution Architect, Endevo Life*

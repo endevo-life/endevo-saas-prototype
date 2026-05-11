@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useDemoMode } from '@/lib/demo-mode';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Resource {
-  kind: 'typeform' | 'tool' | 'podcast' | 'video';
+  kind: 'typeform' | 'tool' | 'podcast' | 'video' | 'pdf' | 'quiz';
   label: string;
   url: string;
   hint?: string;
@@ -51,6 +53,14 @@ const DOMAINS: Record<string, DomainContent> = {
         type: 'video',
         duration: '12 min',
         driveId: '1a6XM150jNTMHil0xNrOZJzxOadPIq4s6',
+        resources: [
+          {
+            kind: 'quiz',
+            label: 'Legal Baseline Quiz (Map your URL)',
+            url: '#',
+            hint: 'Template slot for legal quiz link',
+          },
+        ],
         takeaways: [
           'The four documents every adult should have',
           'How "executor", "trustee", and "beneficiary" differ',
@@ -70,6 +80,12 @@ const DOMAINS: Record<string, DomainContent> = {
             label: 'Open the goal-setting form',
             url: 'https://jbigogmrgex.typeform.com/to/WfLmFB8k',
             hint: 'Private to you · 5 minutes',
+          },
+          {
+            kind: 'pdf',
+            label: 'Executor One-Page Brief Template (Map your PDF URL)',
+            url: '#',
+            hint: 'Template slot for deliverable handout',
           },
         ],
         takeaways: [
@@ -110,7 +126,7 @@ const DOMAINS: Record<string, DomainContent> = {
           {
             kind: 'tool',
             label: 'Trust & Will',
-            url: 'https://trustandwill.com/',
+            url: 'https://trustandwill.com/?g_adtype=search&g_network=g&g_campaign=Trust+%26+Will+%7C+Branded+%7C+BOFU&g_campaignid=1973518268&g_keyword=trust%20and%20will&g_keywordid=kwd-25464110&g_adid=576972079673&g_adgroupid=129320420621&g_acctid=740-480-2447&utm_adgroup={adgroup}&utm_medium=cpc&utm_source=google&utm_term=trust%20and%20will&utm_campaign=trustandwill_bofu&hsa_acc=7404802447&hsa_cam=1973518268&hsa_grp=129320420621&hsa_ad=576972079673&hsa_src=g&hsa_tgt=kwd-25464110&hsa_kw=trust%20and%20will&hsa_mt=e&hsa_net=adwords&hsa_ver=3&gad_source=1&gad_campaignid=1973518268&gbraid=0AAAAADCPKc7xYeSrWdecKeOm3X_2rz8ci&gclid=CjwKCAjwmNLHBhA4EiwA3ts3mZMWTWppxKNaAwgufURHYFW99GTfxzcSeq75h8BBzBdWEbxe2Lkp4RoCcDoQAvD_BwE',
             hint: 'Attorney-supported, paid · ~$159',
           },
           {
@@ -333,29 +349,151 @@ const DOMAINS: Record<string, DomainContent> = {
     number: '01',
     label: 'BUILD MY PROJECT',
     description: 'Set the foundation. One video, one form. Pre-fills the six domains ahead.',
-    totalLessons: 1,
+    totalLessons: 6,
     startedLessons: 0,
     xpPerLesson: 100,
     lessons: [
       {
-        id: 'build-foundation',
+        id: 'build-develop-project',
         number: '01.01',
-        title: 'Build My Project — Foundation Setup',
-        type: 'action',
+        title: 'Learn How to Develop a Project',
+        type: 'video',
         duration: '10 min',
-        driveId: '14Ap77YmhXueUokk3m0O7iXQ_svvAQzRz',
+        driveId: '1F-hrxq1g73ud6LeU1-GG8W6tU7XxGjza',
         resources: [
           {
-            kind: 'typeform',
-            label: 'Project Builder form',
-            url: 'https://jbigogmrgex.typeform.com/to/WTCq3oCB',
-            hint: 'Private to you · ~5 minutes',
+            kind: 'video',
+            label: 'Meet Jesse',
+            url: 'https://drive.google.com/file/d/1y1WBf5DfY7KhO0FTndx1qrY8Yi6AvJQI/view?usp=drive_link',
+            hint: 'Welcome context video',
           },
         ],
         takeaways: [
-          'Define your scenario focus: die tomorrow, terminal diagnosis, long-term care',
-          'Identify the one or two people who must be told first',
-          'Set the cadence — how often you\'ll return to the path',
+          'Understand the MFP project flow from setup to deliverables',
+          'Frame your personal objective and urgency',
+          'Commit to a practical completion cadence',
+        ],
+      },
+      {
+        id: 'build-avoidance-quiz',
+        number: '01.02',
+        title: 'Action Item · Step 1 · Avoidance Quiz',
+        type: 'action',
+        duration: '8 min',
+        resources: [
+          {
+            kind: 'pdf',
+            label: 'Avoidance Quiz worksheet (PDF)',
+            url: 'https://drive.google.com/file/d/1mZVYEkh3-ga-ZQuU46Ay8UOdtrC4kQTg/view?usp=drive_link',
+            hint: 'Download and complete',
+          },
+          {
+            kind: 'quiz',
+            label: 'Submit Avoidance Quiz',
+            url: 'https://jbigogmrgex.typeform.com/to/Xtwvoh3h',
+            hint: 'Typeform',
+          },
+        ],
+        takeaways: [
+          'Identify avoidance patterns that delay planning',
+          'Convert awareness into one immediate action',
+          'Set a simple commitment for the next 48 hours',
+        ],
+      },
+      {
+        id: 'build-klt-map',
+        number: '01.03',
+        title: 'Action Item · Step 2 · Name Know/Love/Trust People',
+        type: 'action',
+        duration: '10 min',
+        resources: [
+          {
+            kind: 'pdf',
+            label: 'Know/Love/Trust map (fillable PDF)',
+            url: 'https://drive.google.com/file/d/1dXahhseXeDBcre0irBdVjdrRzD39zrjM/view?usp=drive_link',
+            hint: 'Fillable template',
+          },
+          {
+            kind: 'typeform',
+            label: 'Submit stakeholder map',
+            url: 'https://jbigogmrgex.typeform.com/to/pv2EOXnU',
+            hint: 'Typeform',
+          },
+        ],
+        takeaways: [
+          'Map primary support stakeholders by role',
+          'Clarify who to notify first and why',
+          'Create role clarity before crisis pressure',
+        ],
+      },
+      {
+        id: 'build-emergency-cards',
+        number: '01.04',
+        title: 'Action Item · Step 3 · Emergency Contact Cards',
+        type: 'action',
+        duration: '12 min',
+        resources: [
+          {
+            kind: 'pdf',
+            label: 'Emergency Contact Cards (worksheet)',
+            url: 'https://drive.google.com/file/d/1QChmwWIePAXby7i6LUSlUtxb8pTpzTVj/view?usp=drive_link',
+            hint: 'Printable template',
+          },
+          {
+            kind: 'pdf',
+            label: 'Emergency Contact Cards (hosted PDF)',
+            url: 'https://storage.googleapis.com/msgsndr/f5ehsbHfdFg2UsHEIb49/media/68efd2f7629b05492d0eca17.pdf',
+            hint: 'Direct file',
+          },
+          {
+            kind: 'typeform',
+            label: 'Submit emergency contact details',
+            url: 'https://jbigogmrgex.typeform.com/to/Icu5Lobp',
+            hint: 'Typeform',
+          },
+        ],
+        takeaways: [
+          'Create actionable emergency contacts',
+          'Ensure key people have reachable details',
+          'Reduce response delays in urgent moments',
+        ],
+      },
+      {
+        id: 'build-mfp-framework',
+        number: '01.05',
+        title: 'Action Item · Step 4 · Review MFP Framework',
+        type: 'reading',
+        duration: '10 min',
+        resources: [
+          {
+            kind: 'pdf',
+            label: 'Review MFP Framework (Drive)',
+            url: 'https://drive.google.com/file/d/1E4qMJHTp0AF3sQyNcAN4K8P9LUMEeoZi/view?usp=drive_link',
+            hint: 'Primary reference',
+          },
+          {
+            kind: 'pdf',
+            label: 'MFP Framework (hosted PDF)',
+            url: 'https://storage.googleapis.com/msgsndr/f5ehsbHfdFg2UsHEIb49/media/6945c9099a634f41952702a2.pdf',
+            hint: 'Direct file',
+          },
+        ],
+        takeaways: [
+          'Align your project milestones to the MFP model',
+          'Connect legal tasks to cross-domain outcomes',
+          'Define what success looks like for this quarter',
+        ],
+      },
+      {
+        id: 'build-launch-checklist',
+        number: '01.06',
+        title: 'Project Launch Checklist',
+        type: 'action',
+        duration: '6 min',
+        takeaways: [
+          'Confirm stakeholder map is complete',
+          'Confirm password and phone readiness',
+          'Confirm Crucial Doc Box location and access',
         ],
       },
     ],
@@ -369,8 +507,10 @@ interface PageProps {
 export default function ModuleDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const { user } = useAuth();
+  const { isDemoFocusMode } = useDemoMode();
   const [activeLessonIdx, setActiveLessonIdx] = useState(0);
-  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [completed, setCompleted] = useState<Record<string, string>>({});
   const [reflection, setReflection] = useState('');
 
   const domain = DOMAINS[id];
@@ -393,14 +533,142 @@ export default function ModuleDetailPage({ params }: PageProps) {
   const xpEarned = completedCount * domain.xpPerLesson;
   const progressPct = Math.round((completedCount / domain.totalLessons) * 100);
 
+  const moduleProgressKey = user ? `lr_module_progress_${user.id}_${id}` : null;
+
+  useEffect(() => {
+    if (!moduleProgressKey) return;
+    const raw = localStorage.getItem(moduleProgressKey);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as { completed?: Record<string, string | boolean> };
+      const normalized = Object.entries(parsed.completed ?? {}).reduce<Record<string, string>>((acc, [lessonId, value]) => {
+        if (typeof value === 'string') {
+          acc[lessonId] = value;
+        } else if (value === true) {
+          acc[lessonId] = new Date().toISOString();
+        }
+        return acc;
+      }, {});
+      setCompleted(normalized);
+    } catch {
+      // Ignore malformed local draft in demo mode.
+    }
+  }, [moduleProgressKey]);
+
+  useEffect(() => {
+    if (!moduleProgressKey) return;
+    localStorage.setItem(
+      moduleProgressKey,
+      JSON.stringify({
+        domainId: id,
+        domainLabel: domain.label,
+        updatedAt: new Date().toISOString(),
+        completed,
+        lessonMeta: domain.lessons.reduce<Record<string, { title: string; number: string }>>((acc, item) => {
+          acc[item.id] = { title: item.title, number: item.number };
+          return acc;
+        }, {}),
+      })
+    );
+  }, [moduleProgressKey, completed, id, domain.label, domain.lessons]);
+
   const handleComplete = () => {
-    setCompleted({ ...completed, [lesson.id]: true });
+    setCompleted({ ...completed, [lesson.id]: new Date().toISOString() });
     if (activeLessonIdx < domain.lessons.length - 1) {
       setTimeout(() => {
         setActiveLessonIdx(activeLessonIdx + 1);
         setReflection('');
       }, 600);
     }
+  };
+
+  const handleDownloadLegalPlaybookMock = () => {
+    if (!user || id !== 'legal' || progressPct < 100) return;
+
+    const legacyRaw = localStorage.getItem(LEGACY_TEAM_FORM_KEY);
+    let legacyTeam: LegacyTeamFormState | null = null;
+    if (legacyRaw) {
+      try {
+        const parsed = JSON.parse(legacyRaw) as { form?: LegacyTeamFormState };
+        legacyTeam = parsed.form ?? null;
+      } catch {
+        legacyTeam = null;
+      }
+    }
+
+    const completedLessons = domain.lessons
+      .filter((item) => !!completed[item.id])
+      .map((item) => {
+        const completedAt = completed[item.id];
+        const dateText = completedAt ? new Date(completedAt).toLocaleDateString() : 'Completed';
+        return `<li><strong>${item.number} ${escapeHtml(item.title)}</strong> <span style="color:#a4acc8;">(${dateText})</span></li>`;
+      })
+      .join('');
+
+    const roleRows = [
+      ['Executor', legacyTeam?.executorPrimary ?? ''],
+      ['Secondary Executor', legacyTeam?.executorSecondary ?? ''],
+      ['Power of Attorney', legacyTeam?.powerOfAttorney ?? ''],
+      ['POA Successor', legacyTeam?.powerOfAttorneySuccessor ?? ''],
+      ['Medical Proxy', legacyTeam?.medicalProxy ?? ''],
+      ['Secondary Medical Proxy', legacyTeam?.medicalProxySecondary ?? ''],
+    ]
+      .map(([label, value]) => `<tr><td style="padding:8px 10px;border:1px solid #c9b17f;">${escapeHtml(label)}</td><td style="padding:8px 10px;border:1px solid #c9b17f;">${escapeHtml(value || 'Not provided')}</td></tr>`)
+      .join('');
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>FinalPlaybook - ${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)}</title>
+</head>
+<body style="font-family: Georgia, 'Times New Roman', serif; margin:0; background:#0e1226; color:#f7f3ea;">
+  <div style="max-width:900px; margin:0 auto; padding:32px;">
+    <div style="border:1px solid #c9b17f; padding:22px; background:linear-gradient(180deg,#1a2348 0%,#0e1226 100%);">
+      <p style="letter-spacing:0.18em; text-transform:uppercase; font-size:11px; color:#d4be94; margin:0 0 6px 0;">Legacy Readiness OS</p>
+      <h1 style="margin:0; color:#d4be94; font-size:34px; letter-spacing:0.06em;">FINALPLAYBOOK</h1>
+      <p style="margin:8px 0 0 0; color:#e8e0cf;">Legal section mock export for demo</p>
+      <p style="margin:10px 0 0 0; font-size:13px; color:#a4acc8;">Prepared for ${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)} · ${new Date().toLocaleDateString()}</p>
+    </div>
+
+    <div style="margin-top:22px; border:1px solid #263157; background:#141c3c; padding:20px;">
+      <h2 style="margin:0 0 10px 0; color:#d4be94; font-size:22px;">Legal Completion Summary</h2>
+      <p style="margin:0 0 8px 0; color:#e8e0cf;">Progress: 100% complete (${completedCount}/${domain.totalLessons} lessons)</p>
+      <ul style="margin:8px 0 0 18px; padding:0; line-height:1.65; color:#f7f3ea;">${completedLessons || '<li>No completed lessons recorded.</li>'}</ul>
+    </div>
+
+    <div style="margin-top:22px; border:1px solid #263157; background:#141c3c; padding:20px;">
+      <h2 style="margin:0 0 10px 0; color:#d4be94; font-size:22px;">Legacy Team Fillable Data</h2>
+      <p style="margin:0 0 12px 0; color:#a4acc8;">Pulled from Action Item #2 form for demo preview.</p>
+      <table style="width:100%; border-collapse:collapse; background:#0f1633; color:#f7f3ea;">${roleRows}</table>
+      <p style="margin:12px 0 0 0; color:#e8e0cf;">
+        One-on-One with Niki: ${escapeHtml(formatStatusWithDateForExport(legacyTeam?.bookedCallStatus ?? '', legacyTeam?.bookedCallDueMonth ?? '', legacyTeam?.bookedCallDueDay ?? '', legacyTeam?.bookedCallDueYear ?? ''))}
+      </p>
+      <p style="margin:6px 0 0 0; color:#e8e0cf;">
+        Topic list prepared: ${escapeHtml(formatStatusWithDateForExport(legacyTeam?.listedTopicsStatus ?? '', legacyTeam?.listedTopicsDueMonth ?? '', legacyTeam?.listedTopicsDueDay ?? '', legacyTeam?.listedTopicsDueYear ?? ''))}
+      </p>
+    </div>
+
+    <p style="margin-top:20px; font-size:12px; color:#a4acc8;">Demo note: in production this would be generated server-side as PDF and stored in DB.</p>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const popup = window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (!popup) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `FinalPlaybook_LegalMock_${user.firstName}_${user.lastName}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
   return (
@@ -444,7 +712,7 @@ export default function ModuleDetailPage({ params }: PageProps) {
       </section>
 
       {/* Lesson list (collapsible / clickable) */}
-      <section
+      {!isDemoFocusMode && <section
         className="rounded-[14px] mb-6 p-4"
         style={{
           background: 'rgba(28,38,68,0.6)',
@@ -496,7 +764,7 @@ export default function ModuleDetailPage({ params }: PageProps) {
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
       {/* Active lesson player */}
       <section
@@ -506,6 +774,18 @@ export default function ModuleDetailPage({ params }: PageProps) {
           border: '1px solid var(--border-gold)',
         }}
       >
+        <div
+          className="rounded-[10px] px-4 py-3 mb-5"
+          style={{ background: 'rgba(212,190,148,0.07)', border: '1px solid var(--border-gold)' }}
+        >
+          <p className="font-(family-name:--font-jura) text-[0.62rem] tracking-[0.2em] uppercase text-(--lr-gold-soft) mb-1">
+            What to do now
+          </p>
+          <p className="text-sm text-(--lr-pearl) leading-relaxed">
+            1) Watch the lesson. 2) Open at least one resource. 3) Mark complete to unlock the next step.
+          </p>
+        </div>
+
         <div className="flex items-baseline justify-between mb-4">
           <div>
             <p className="lr-eyebrow" style={{ color: 'var(--lr-gold-soft)' }}>
@@ -600,6 +880,8 @@ export default function ModuleDetailPage({ params }: PageProps) {
           );
         })()}
 
+        {lesson.id === 'legal-team' && <LegacyTeamActionForm />}
+
         {/* Takeaways */}
         <div className="mb-5">
           <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold-soft)' }}>
@@ -618,7 +900,7 @@ export default function ModuleDetailPage({ params }: PageProps) {
         <hr className="lr-separator my-5" />
 
         {/* Reflection */}
-        <div className="mb-6">
+        {!isDemoFocusMode && <div className="mb-6">
           <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold-soft)' }}>
             Reflection (private to you)
           </p>
@@ -636,7 +918,7 @@ export default function ModuleDetailPage({ params }: PageProps) {
           <p className="text-[0.65rem] text-(--lr-lavender-dust) mt-2">
             Org Admin sees only that you completed the lesson. Your reflection stays with you.
           </p>
-        </div>
+        </div>}
 
         {/* Action bar */}
         <div className="flex items-center justify-between gap-3">
@@ -658,9 +940,38 @@ export default function ModuleDetailPage({ params }: PageProps) {
               : 'Mark complete · +' + domain.xpPerLesson + ' XP'}
           </button>
         </div>
+
+        {id === 'legal' && progressPct === 100 && (
+          <div
+            className="mt-6 rounded-[10px] p-5"
+            style={{ background: 'rgba(212,190,148,0.07)', border: '1px solid var(--border-gold)' }}
+          >
+            <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold)' }}>
+              Demo deliverable unlocked
+            </p>
+            <h4 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.05em] mb-2">
+              Download branded FinalPlaybook (mock)
+            </h4>
+            <p className="text-sm text-(--lr-pearl) opacity-90 mb-4">
+              Legal is now 100% complete. Export a branded mock file containing completed legal lessons and your fillable Legacy Team action item data.
+            </p>
+            <button onClick={handleDownloadLegalPlaybookMock} className="lr-btn-primary">
+              Open legal playbook PDF preview
+            </button>
+          </div>
+        )}
       </section>
     </DashboardLayout>
   );
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function Mini({ label, value }: { label: string; value: string }) {
@@ -715,7 +1026,308 @@ function ResourceIcon({ kind }: { kind: Resource['kind'] }) {
             <path d="M11 1L8 4L8 8L4 12L4 13.5L1 13.5M11 1L13.5 1L13.5 3.5L15 5L11 9L8 6L11 1Z" stroke={stroke} strokeWidth="1.2" strokeLinejoin="round" />
           </>
         )}
+        {kind === 'pdf' && (
+          <>
+            <path d="M4 1.5H9.5L13 5V14.5H4V1.5Z" stroke={stroke} strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M9.5 1.5V5H13" stroke={stroke} strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M5.5 10.5H11.5" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+          </>
+        )}
+        {kind === 'quiz' && (
+          <>
+            <circle cx="8" cy="8" r="6.5" stroke={stroke} strokeWidth="1.2" />
+            <path d="M6.4 6.6C6.4 5.7 7.1 5 8 5C8.9 5 9.6 5.6 9.6 6.5C9.6 7.7 8 7.8 8 9" stroke={stroke} strokeWidth="1.2" strokeLinecap="round" />
+            <circle cx="8" cy="11.4" r="0.8" fill={stroke} />
+          </>
+        )}
       </svg>
     </span>
   );
+}
+
+type StatusChoice = 'check' | 'not_yet' | '';
+
+interface LegacyTeamFormState {
+  bookedCallStatus: StatusChoice;
+  bookedCallDueMonth: string;
+  bookedCallDueDay: string;
+  bookedCallDueYear: string;
+  listedTopicsStatus: StatusChoice;
+  listedTopicsDueMonth: string;
+  listedTopicsDueDay: string;
+  listedTopicsDueYear: string;
+  executorPrimary: string;
+  executorSecondary: string;
+  powerOfAttorney: string;
+  powerOfAttorneySuccessor: string;
+  medicalProxy: string;
+  medicalProxySecondary: string;
+}
+
+const LEGACY_TEAM_FORM_KEY = 'lr_legal_team_action_item_v1';
+
+const LEGACY_TEAM_INITIAL: LegacyTeamFormState = {
+  bookedCallStatus: '',
+  bookedCallDueMonth: '',
+  bookedCallDueDay: '',
+  bookedCallDueYear: '',
+  listedTopicsStatus: '',
+  listedTopicsDueMonth: '',
+  listedTopicsDueDay: '',
+  listedTopicsDueYear: '',
+  executorPrimary: '',
+  executorSecondary: '',
+  powerOfAttorney: '',
+  powerOfAttorneySuccessor: '',
+  medicalProxy: '',
+  medicalProxySecondary: '',
+};
+
+function LegacyTeamActionForm() {
+  const [form, setForm] = useState<LegacyTeamFormState>(LEGACY_TEAM_INITIAL);
+  const [savedAt, setSavedAt] = useState<string>('');
+
+  useEffect(() => {
+    const raw = localStorage.getItem(LEGACY_TEAM_FORM_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as { form: LegacyTeamFormState; savedAt: string };
+      if (parsed.form) setForm(parsed.form);
+      if (parsed.savedAt) setSavedAt(parsed.savedAt);
+    } catch {
+      // Ignore malformed local draft in demo mode.
+    }
+  }, []);
+
+  const setField = <K extends keyof LegacyTeamFormState>(key: K, value: LegacyTeamFormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveForm = () => {
+    const saved = new Date().toISOString();
+    localStorage.setItem(LEGACY_TEAM_FORM_KEY, JSON.stringify({ form, savedAt: saved }));
+    setSavedAt(saved);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    saveForm();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.ctrlKey && event.key === 'Enter') {
+      event.preventDefault();
+      saveForm();
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      className="rounded-[10px] p-5 mb-5"
+      style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+    >
+      <p className="lr-eyebrow mb-2" style={{ color: 'var(--lr-gold)' }}>
+        Fillable Action Item
+      </p>
+      <h4 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.05em] mb-2">
+        It is time to assign roles for your Legacy Team
+      </h4>
+      <p className="text-sm text-(--lr-pearl) opacity-90 leading-relaxed mb-4">
+        It may overlap with your Know/Love/Trust list from last week. If unsure, pause and discuss role fit during your one-on-one call with Niki.
+      </p>
+
+      <div className="space-y-4">
+        <ChecklistWithDate
+          title="I booked my One-on-One call with Niki"
+          status={form.bookedCallStatus}
+          onStatusChange={(value) => setField('bookedCallStatus', value)}
+          month={form.bookedCallDueMonth}
+          day={form.bookedCallDueDay}
+          year={form.bookedCallDueYear}
+          onMonth={(value) => setField('bookedCallDueMonth', value)}
+          onDay={(value) => setField('bookedCallDueDay', value)}
+          onYear={(value) => setField('bookedCallDueYear', value)}
+        />
+
+        <ChecklistWithDate
+          title="I made a list of topics I want to discuss in my One-on-One call"
+          status={form.listedTopicsStatus}
+          onStatusChange={(value) => setField('listedTopicsStatus', value)}
+          month={form.listedTopicsDueMonth}
+          day={form.listedTopicsDueDay}
+          year={form.listedTopicsDueYear}
+          onMonth={(value) => setField('listedTopicsDueMonth', value)}
+          onDay={(value) => setField('listedTopicsDueDay', value)}
+          onYear={(value) => setField('listedTopicsDueYear', value)}
+        />
+      </div>
+
+      <hr className="lr-separator my-5" />
+
+      <div className="grid md:grid-cols-2 gap-3">
+        <FillableField
+          label="Name your choice for Executor"
+          value={form.executorPrimary}
+          onChange={(value) => setField('executorPrimary', value)}
+        />
+        <FillableField
+          label="Name your backup / Secondary Executor"
+          value={form.executorSecondary}
+          onChange={(value) => setField('executorSecondary', value)}
+        />
+        <FillableField
+          label="Name your choice for Power of Attorney"
+          value={form.powerOfAttorney}
+          onChange={(value) => setField('powerOfAttorney', value)}
+        />
+        <FillableField
+          label="Name your Power of Attorney successor / alternate"
+          value={form.powerOfAttorneySuccessor}
+          onChange={(value) => setField('powerOfAttorneySuccessor', value)}
+        />
+        <FillableField
+          label="Name your choice for Medical Proxy"
+          value={form.medicalProxy}
+          onChange={(value) => setField('medicalProxy', value)}
+        />
+        <FillableField
+          label="Name your backup / Secondary Medical Proxy"
+          value={form.medicalProxySecondary}
+          onChange={(value) => setField('medicalProxySecondary', value)}
+        />
+      </div>
+
+      <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-[0.65rem] text-(--lr-lavender-dust)">
+          Submit with button or press Ctrl + Enter.
+        </p>
+        <button type="submit" className="lr-btn-primary">
+          Submit
+        </button>
+      </div>
+
+      {savedAt && (
+        <p className="text-[0.65rem] text-(--lr-gold-soft) mt-3">
+          Saved locally: {new Date(savedAt).toLocaleString()}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function FillableField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs text-(--lr-gold-soft) tracking-[0.14em] uppercase font-(family-name:--font-jura)">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Type your answer here..."
+        className="mt-2 w-full rounded-[10px] px-3 py-2.5 text-sm bg-transparent"
+        style={{ border: '1px solid var(--border-subtle)', color: 'var(--lr-pearl)' }}
+      />
+    </label>
+  );
+}
+
+function ChecklistWithDate({
+  title,
+  status,
+  onStatusChange,
+  month,
+  day,
+  year,
+  onMonth,
+  onDay,
+  onYear,
+}: {
+  title: string;
+  status: StatusChoice;
+  onStatusChange: (value: StatusChoice) => void;
+  month: string;
+  day: string;
+  year: string;
+  onMonth: (value: string) => void;
+  onDay: (value: string) => void;
+  onYear: (value: string) => void;
+}) {
+  return (
+    <div
+      className="rounded-[10px] p-4"
+      style={{ background: 'rgba(28,38,68,0.55)', border: '1px solid var(--border-subtle)' }}
+    >
+      <p className="text-sm text-(--lr-pearl) mb-3">{title}</p>
+
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <button
+          type="button"
+          onClick={() => onStatusChange('check')}
+          className="px-3 py-1.5 rounded-[8px] text-xs font-(family-name:--font-jura) tracking-[0.14em] uppercase"
+          style={{
+            border: '1px solid var(--border-gold)',
+            color: status === 'check' ? 'var(--lr-navy-deep)' : 'var(--lr-gold)',
+            background: status === 'check' ? 'var(--lr-gold)' : 'transparent',
+          }}
+        >
+          A · Check
+        </button>
+        <button
+          type="button"
+          onClick={() => onStatusChange('not_yet')}
+          className="px-3 py-1.5 rounded-[8px] text-xs font-(family-name:--font-jura) tracking-[0.14em] uppercase"
+          style={{
+            border: '1px solid var(--border-gold)',
+            color: status === 'not_yet' ? 'var(--lr-navy-deep)' : 'var(--lr-gold)',
+            background: status === 'not_yet' ? 'var(--lr-gold)' : 'transparent',
+          }}
+        >
+          B · Not Yet
+        </button>
+      </div>
+
+      <p className="text-[0.7rem] text-(--lr-lavender-dust) mb-2">I would like to have this completed by:</p>
+      <div className="grid grid-cols-3 gap-2">
+        <input
+          value={month}
+          onChange={(event) => onMonth(event.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+          placeholder="MM"
+          className="rounded-[8px] px-3 py-2 text-sm bg-transparent"
+          style={{ border: '1px solid var(--border-subtle)', color: 'var(--lr-pearl)' }}
+        />
+        <input
+          value={day}
+          onChange={(event) => onDay(event.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+          placeholder="DD"
+          className="rounded-[8px] px-3 py-2 text-sm bg-transparent"
+          style={{ border: '1px solid var(--border-subtle)', color: 'var(--lr-pearl)' }}
+        />
+        <input
+          value={year}
+          onChange={(event) => onYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+          placeholder="YYYY"
+          className="rounded-[8px] px-3 py-2 text-sm bg-transparent"
+          style={{ border: '1px solid var(--border-subtle)', color: 'var(--lr-pearl)' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function formatStatusWithDateForExport(status: StatusChoice, month: string, day: string, year: string): string {
+  const statusText = status === 'check' ? 'Check' : status === 'not_yet' ? 'Not yet' : 'Not set';
+  const hasDate = month || day || year;
+  if (!hasDate) return statusText;
+  return `${statusText} - target ${month || 'MM'}/${day || 'DD'}/${year || 'YYYY'}`;
 }

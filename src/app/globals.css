@@ -168,14 +168,25 @@ html, body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
   font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
 }
 
+/* Readability mode: flatten decorative gradients to one solid color surface. */
+section[style*="linear-gradient"],
+div[style*="linear-gradient"],
+article[style*="linear-gradient"],
+aside[style*="linear-gradient"] {
+  background: var(--surface) !important;
+  background-image: none !important;
+}
+
 h1, h2, h3, h4 {
   font-family: var(--font-label);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--text-primary);
 }
 
@@ -229,9 +240,9 @@ h1, h2, h3, h4 {
 /* Caps-tracked label — for "01 LEGAL · 02 FINANCIAL" style copy */
 .lr-eyebrow {
   font-family: var(--font-label);
-  font-weight: 500;
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
+  font-weight: 700;
+  font-size: 0.86rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--lr-steel);
 }
@@ -290,9 +301,9 @@ h1, h2, h3, h4 {
   padding: 0.7rem 1.25rem;
   font-family: var(--font-label);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   transition: all 0.2s ease;
 }
 .lr-btn-primary:hover {
@@ -309,9 +320,9 @@ h1, h2, h3, h4 {
   padding: 0.7rem 1.25rem;
   font-family: var(--font-label);
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   transition: all 0.2s ease;
 }
 .lr-btn-gold:hover {
@@ -328,9 +339,9 @@ h1, h2, h3, h4 {
   padding: 0.65rem 1.15rem;
   font-family: var(--font-label);
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 0.84rem;
   transition: all 0.2s ease;
 }
 .lr-btn-outline:hover {
