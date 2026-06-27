@@ -7,9 +7,23 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/common/Toast';
 import LRMonogram from '@/components/common/LRMonogram';
 import { useEffect, useState } from 'react';
-import { useDemoMode } from '@/lib/demo-mode';
+import { DOMAINS, type Resource } from '@/lib/module-content';
 
 type NodeStatus = 'complete' | 'current' | 'available' | 'locked';
+
+/**
+ * Maps a path stage to the module domain key whose content powers the
+ * slide-in panel. Stages without their own module library (assessment,
+ * communication, the playbook capstone) return null and the panel shows a
+ * graceful summary instead.
+ */
+const STAGE_TO_DOMAIN: Partial<Record<StageId, string>> = {
+  build: 'build',
+  legal: 'legal',
+  financial: 'financial',
+  physical: 'physical',
+  digital: 'digital',
+};
 type StageId =
   | 'assessment'
   | 'build'
@@ -148,8 +162,8 @@ export default function LegacyPathTree() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const { isDemoFocusMode } = useDemoMode();
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
+  const [openStage, setOpenStage] = useState<PathStage | null>(null);
   const employee = mockEmployees.find((e) => e.id === user?.id);
   const progress = employee?.progressPercentage ?? 0;
   const stages = buildStages(progress);
@@ -173,56 +187,88 @@ export default function LegacyPathTree() {
 
   const isLight = themeMode === 'light';
 
-  // ---- snake winding layout ----
-  const COL_WIDTH = 540;
-  const CENTER_X = COL_WIDTH / 2;
-  const AMPLITUDE = 150;
-  const ROW_GAP = 200;
+  // ---- compact gamified zig-zag layout ----
+  // Milestones flow left → right across the board, wrapping to a new row
+  // when they run out of horizontal room. Within each row they alternate
+  // up / down so the connecting line bounces — playful spatial rhythm
+  // without the tall single-column scroll. Tone stays Eternal Geometry:
+  // champagne gold, no penalty UI, no Duolingo brightness.
+  const COL_WIDTH = 760;
+  const PER_ROW = 3;            // nodes per horizontal row before wrapping
+  const COL_GAP = COL_WIDTH / (PER_ROW + 1);
+  const ROW_GAP = 215;          // vertical distance between wrapped rows
+  const ZIG = 46;               // up/down bounce within a row
   const PADDING_TOP = 80;
 
   const positions = stages.map((s, i) => {
-    const t = i / Math.max(stages.length - 1, 1);
-    const wave = Math.sin(t * Math.PI * 2) * AMPLITUDE;
+    const row = Math.floor(i / PER_ROW);
+    const idxInRow = i % PER_ROW;
+    // Snake direction: even rows go L→R, odd rows go R→L (boustrophedon)
+    const leftToRight = row % 2 === 0;
+    const col = leftToRight ? idxInRow : PER_ROW - 1 - idxInRow;
+    const zig = idxInRow % 2 === 0 ? -ZIG : ZIG; // alternate bounce
     return {
-      x: CENTER_X + wave,
-      y: PADDING_TOP + i * ROW_GAP,
+      x: COL_GAP * (col + 1),
+      y: PADDING_TOP + row * ROW_GAP + zig,
       stage: s,
     };
   });
 
-  const totalHeight = PADDING_TOP * 2 + (stages.length - 1) * ROW_GAP;
+  const rowCount = Math.ceil(stages.length / PER_ROW);
+  const totalHeight = PADDING_TOP * 2 + (rowCount - 1) * ROW_GAP + ZIG * 2;
+
+  // Smooth curve between two consecutive nodes. Same-row hops bend
+  // horizontally (control points offset in X); row-wrap hops bend
+  // vertically (control points offset in Y) so the line loops gently
+  // down to the next row instead of cutting straight across.
+  const segment = (
+    prev: { x: number; y: number },
+    p: { x: number; y: number },
+    sameRow: boolean,
+  ) => {
+    if (sameRow) {
+      const midX = (prev.x + p.x) / 2;
+      return ` C ${midX} ${prev.y}, ${midX} ${p.y}, ${p.x} ${p.y}`;
+    }
+    const midY = (prev.y + p.y) / 2;
+    return ` C ${prev.x} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y}`;
+  };
+
+  const curveThrough = (pts: typeof positions) =>
+    pts.reduce((acc, p, i) => {
+      if (i === 0) return `M ${p.x} ${p.y}`;
+      const prev = pts[i - 1];
+      const sameRow = Math.floor((i - 1) / PER_ROW) === Math.floor(i / PER_ROW);
+      return acc + segment(prev, p, sameRow);
+    }, '');
 
   // Single curve through all node centres
-  const fullCurve = positions.reduce((acc, p, i) => {
-    if (i === 0) return `M ${p.x} ${p.y}`;
-    const prev = positions[i - 1];
-    const midY = (prev.y + p.y) / 2;
-    return `${acc} C ${prev.x} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y}`;
-  }, '');
+  const fullCurve = curveThrough(positions);
 
   // Curve up to the first non-complete node — drawn solid gold
   const firstIncomplete = positions.findIndex((p) => p.stage.status !== 'complete');
-  const completedCurveSegments = firstIncomplete > 0 ? positions.slice(0, firstIncomplete + 1) : positions.slice(0, 1);
-  const completedCurve = completedCurveSegments.reduce((acc, p, i) => {
-    if (i === 0) return `M ${p.x} ${p.y}`;
-    const prev = positions[i - 1];
-    const midY = (prev.y + p.y) / 2;
-    return `${acc} C ${prev.x} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y}`;
-  }, '');
+  const completedCurveSegments =
+    firstIncomplete > 0 ? positions.slice(0, firstIncomplete + 1) : positions.slice(0, 1);
+  const completedCurve = curveThrough(completedCurveSegments);
 
-  const stats =
-    progress >= 70
-      ? { xp: 1840, streak: 11, level: 'L3 · Custodian', dailyXP: 60, dailyGoal: 80 }
-      : progress >= 25
-      ? { xp: 720,  streak: 4,  level: 'L1 · Steward',   dailyXP: 30, dailyGoal: 80 }
-      : { xp: 0,    streak: 0,  level: 'L1 · Beginner',  dailyXP: 0,  dailyGoal: 80 };
+  // Calm, factual metrics — no XP / streak / level gamification (death-prep
+  // tone). Peace-of-mind score tracks readiness; counts come from stages.
+  const peaceScore = Math.round(progress);
+  const completedStages = stages.filter((s) => s.status === 'complete').length;
+  const totalStages = stages.length;
+  const milestonesTouched = Math.min(
+    completedStages + (stages.some((s) => s.status === 'current') ? 1 : 0),
+    totalStages,
+  );
 
   const handleStageClick = (s: PathStage) => {
     if (s.status === 'locked') {
       toast(`Locked — finish "${stages[stages.findIndex((x) => x.id === s.id) - 1]?.title ?? 'previous stage'}" to unlock`, 'warn');
       return;
     }
-    if (s.route) router.push(s.route);
+    // Open the milestone content inline as a slide-in panel rather than
+    // navigating away — the path stays "home" behind the panel.
+    setOpenStage(s);
   };
 
   return (
@@ -246,9 +292,9 @@ export default function LegacyPathTree() {
           </h2>
         </div>
         <div className="grid grid-cols-3 gap-3 min-w-fit">
-          <Mini label="XP" value={stats.xp.toLocaleString()} />
-          <Mini label="Streak" value={`${stats.streak}d`} />
-          <Mini label="Level" value={stats.level} />
+          <Mini label="Peace of mind" value={`${peaceScore}`} />
+          <Mini label="Completed" value={`${completedStages}/${totalStages}`} />
+          <Mini label="Touched" value={`${milestonesTouched}`} />
         </div>
       </section>
 
@@ -300,7 +346,7 @@ export default function LegacyPathTree() {
 
             {/* Stage nodes positioned absolutely along the curve */}
             {positions.map(({ x, y, stage }) => {
-              const size = stage.isCapstone ? 130 : 110;
+              const size = stage.isCapstone ? 104 : 88;
               const pal = STAGE_PALETTE[stage.status];
               const isCurrent = stage.status === 'current';
               const isComplete = stage.status === 'complete';
@@ -327,6 +373,25 @@ export default function LegacyPathTree() {
                         border: '2px solid var(--lr-gold)',
                       }}
                     />
+                  )}
+
+                  {/* "You are here" pin — gamified wayfinding, calm tone */}
+                  {isCurrent && (
+                    <div
+                      className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
+                      style={{ bottom: size + 6, animation: 'lr-float 2.6s ease-in-out infinite' }}
+                    >
+                      <span
+                        className="px-2.5 py-1 rounded-full font-(family-name:--font-jura) text-[0.55rem] tracking-[0.2em] uppercase"
+                        style={{
+                          background: 'var(--lr-gold)',
+                          color: 'var(--lr-navy-deep)',
+                          boxShadow: '0 6px 16px -6px rgba(212,190,148,0.6)',
+                        }}
+                      >
+                        You&apos;re here
+                      </span>
+                    </div>
                   )}
 
                   <button
@@ -419,191 +484,398 @@ export default function LegacyPathTree() {
               70%  { transform: scale(1.4); opacity: 0;   }
               100% { transform: scale(1.4); opacity: 0;   }
             }
+            @keyframes lr-float {
+              0%, 100% { transform: translate(-50%, 0); }
+              50%      { transform: translate(-50%, -4px); }
+            }
           `}</style>
         </div>
 
-        {/* SIDE RAIL */}
+        {/* SIDE RAIL — Peace of mind · Trusted advisor · This week */}
         <aside className="space-y-4">
-          {/* Today's Threshold */}
+          {/* Peace of mind score */}
           <div
-            className="rounded-[14px] p-5"
+            className="rounded-[14px] p-6 text-center"
             style={{
-              background: 'linear-gradient(180deg, rgba(212,190,148,0.16) 0%, rgba(212,190,148,0.05) 100%)',
+              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
               border: '1px solid var(--border-gold)',
             }}
           >
-            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
-              Today's threshold
+            <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold-soft)' }}>
+              Peace of mind
             </p>
-            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.05em] mb-3">
-              Earn {stats.dailyGoal} XP today
-            </h3>
-
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-sm">
-                {stats.dailyXP} / {stats.dailyGoal} XP
-              </span>
-              <span className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.18em] uppercase text-(--lr-lavender-dust)">
-                {Math.round((stats.dailyXP / stats.dailyGoal) * 100)}%
-              </span>
-            </div>
+            <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-5xl leading-none">
+              {peaceScore}
+            </p>
+            <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust) mt-2 mb-4">
+              of 100
+            </p>
             <div className="w-full h-2 rounded-full" style={{ background: 'rgba(212,190,148,0.12)' }}>
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (stats.dailyXP / stats.dailyGoal) * 100)}%`, background: 'var(--lr-gold)' }} />
-            </div>
-
-            <div className="mt-4 space-y-2">
-              <Quest done={stats.dailyXP >= 30}  label="Earn first 30 XP" />
-              <Quest done={stats.dailyXP >= 80}  label="Complete one action" />
-              <Quest done={false}                label="Open one reflection" />
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${peaceScore}%`, background: 'var(--lr-gold)' }}
+              />
             </div>
           </div>
 
-          {/* Streak Shield */}
-          {!isDemoFocusMode && <div
+          {/* Trusted advisor */}
+          <div
             className="rounded-[14px] p-5"
             style={{
               background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
-              Streak shield
+            <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold-soft)' }}>
+              Trusted advisor
             </p>
-            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.05em] mb-3">
-              {stats.streak}-day streak
+            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.05em] mb-2">
+              Ask anything
             </h3>
-
-            <div className="grid grid-cols-7 gap-1 mb-3">
-              {Array.from({ length: 7 }).map((_, i) => {
-                const filled = i < Math.min(7, stats.streak);
-                return (
-                  <div
-                    key={i}
-                    className="h-7 rounded-md flex items-center justify-center"
-                    style={{
-                      background: filled ? 'var(--lr-gold)' : 'rgba(212,190,148,0.08)',
-                      color: filled ? 'var(--lr-navy-deep)' : 'var(--lr-lavender-dust)',
-                      border: filled ? '1px solid var(--lr-gold)' : '1px solid rgba(212,190,148,0.18)',
-                    }}
-                  >
-                    <span className="text-[0.6rem] font-(family-name:--font-jetbrains)">{filled ? '◆' : '·'}</span>
-                  </div>
-                );
-              })}
-            </div>
-
+            <p className="text-xs text-(--lr-pearl) opacity-85 leading-relaxed mb-4">
+              Niki built guidance for when you&apos;re stuck or not sure what&apos;s next.
+            </p>
             <button
-              onClick={() => toast('Streak Shield armed — protects one missed day', 'success')}
-              className="w-full lr-btn-outline"
-              style={{ color: 'var(--lr-gold)' }}
+              onClick={() => toast('Trusted Advisor connects in Phase 2', 'info')}
+              className="w-full text-left px-4 py-2.5 rounded-[10px] text-sm transition-colors hover:bg-white/[0.03]"
+              style={{
+                background: 'rgba(212,190,148,0.06)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--lr-lavender-dust)',
+              }}
             >
-              Arm shield (1 available)
+              Ask a question…
             </button>
-          </div>}
+          </div>
 
-          {/* Cohort Circle */}
-          {!isDemoFocusMode && <div
+          {/* This week */}
+          <div
             className="rounded-[14px] p-5"
             style={{
               background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
-              Cohort circle
+            <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold-soft)' }}>
+              This week
             </p>
-            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.05em] mb-3">
-              Practising this week
-            </h3>
-
-            <div className="flex items-center mb-3">
-              {['SM', 'MR', 'AP', 'JC', 'DK'].map((init, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-(family-name:--font-jura) text-[0.6rem] tracking-wider"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--lr-navy-mid) 0%, var(--lr-midnight) 100%)',
-                    color: 'var(--lr-gold)',
-                    border: '1px solid var(--lr-gold)',
-                    marginLeft: i === 0 ? 0 : -8,
-                    zIndex: 5 - i,
-                  }}
-                >
-                  {init}
-                </div>
-              ))}
-              <div
-                className="ml-2 px-2 py-0.5 rounded-full font-(family-name:--font-jetbrains) text-xs"
-                style={{ background: 'rgba(212,190,148,0.08)', color: 'var(--lr-pearl)', border: '1px solid var(--border-gold)' }}
-              >
-                +9
-              </div>
+            <div
+              className="rounded-[10px] px-4 py-3"
+              style={{ background: 'rgba(212,190,148,0.05)', border: '1px solid var(--border-subtle)' }}
+            >
+              <p className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.04em]">
+                {milestonesTouched} milestone{milestonesTouched === 1 ? '' : 's'} touched
+              </p>
+              <p className="text-xs text-(--lr-lavender-dust) mt-1">
+                No streak language. Just facts.
+              </p>
             </div>
-
-            <p className="text-xs text-(--lr-pearl) opacity-85 leading-relaxed">
-              <span className="text-(--lr-gold)">14 colleagues</span> at XYZ Company are practising this week.
-              No names ranked. No content shared.
-            </p>
-          </div>}
-
-          {/* Letter Vault */}
-          {!isDemoFocusMode && <div
-            className="rounded-[14px] p-5"
-            style={{
-              background: 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
-              The letter vault
-            </p>
-            <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-lg tracking-[0.05em] mb-3">
-              Sealed letters
-            </h3>
-
-            <div className="space-y-2">
-              {[
-                { who: 'To my executor',  unlocked: progress >= 38, hint: 'Unlocks after Legal' },
-                { who: 'To my partner',   unlocked: progress >= 58, hint: 'Unlocks after Financial' },
-                { who: 'To my children',  unlocked: progress >= 86, hint: 'Unlocks after Digital' },
-                { who: 'To future me',    unlocked: progress >= 100, hint: 'Unlocks at FinalPlaybook' },
-              ].map((l) => (
-                <button
-                  key={l.who}
-                  onClick={() =>
-                    l.unlocked
-                      ? toast(`Opening "${l.who}" letter — coming next`, 'info')
-                      : toast(l.hint, 'warn')
-                  }
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-[8px] text-left transition-colors hover:bg-white/[0.03]"
-                  style={{
-                    border: '1px solid rgba(212,190,148,0.12)',
-                    opacity: l.unlocked ? 1 : 0.55,
-                  }}
-                >
-                  <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0"
-                    style={{
-                      background: l.unlocked ? 'rgba(212,190,148,0.12)' : 'rgba(212,190,148,0.04)',
-                      color: l.unlocked ? 'var(--lr-gold)' : 'var(--lr-lavender-dust)',
-                      border: l.unlocked ? '1px solid var(--lr-gold)' : '1px dashed rgba(212,190,148,0.2)',
-                    }}
-                  >
-                    {l.unlocked ? '✉' : '◆'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-(--lr-pearl)">{l.who}</p>
-                    <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
-                      {l.unlocked ? 'Available' : l.hint}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>}
+          </div>
         </aside>
       </div>
+
+      {/* Slide-in milestone content panel */}
+      <MilestonePanel
+        stage={openStage}
+        isLight={isLight}
+        onClose={() => setOpenStage(null)}
+        onOpenFull={(route) => {
+          setOpenStage(null);
+          router.push(route);
+        }}
+      />
     </DashboardLayout>
+  );
+}
+
+/**
+ * Slide-in content panel — opens when a path node is clicked. Mirrors the
+ * L3 milestone view from UX_REDESIGN.md (video playlist + worksheet docker)
+ * without leaving the path. The path dims behind it; closing returns there.
+ *
+ * Content is wired to the real module library (src/lib/module-content.ts):
+ * the same lessons, sample Drive videos, and resources the full module page
+ * uses. Stages without a module library show a graceful summary.
+ */
+function MilestonePanel({
+  stage,
+  isLight,
+  onClose,
+  onOpenFull,
+}: {
+  stage: PathStage | null;
+  isLight: boolean;
+  onClose: () => void;
+  onOpenFull: (route: string) => void;
+}) {
+  const open = stage !== null;
+  const domainKey = stage ? STAGE_TO_DOMAIN[stage.id] : undefined;
+  const domain = domainKey ? DOMAINS[domainKey] : undefined;
+  const lessons = domain?.lessons ?? [];
+
+  // Which lesson is selected inside the panel. Reset to 0 when a new stage
+  // opens — done during render (React's "adjust state on prop change" pattern)
+  // rather than in an effect, so there's no cascading-render warning.
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [seenStageId, setSeenStageId] = useState(stage?.id);
+  if (stage?.id !== seenStageId) {
+    setSeenStageId(stage?.id);
+    setActiveIdx(0);
+  }
+
+  // Close on Escape for keyboard users.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  const lesson = lessons[activeIdx];
+  const resources: Resource[] = lesson?.resources
+    ? lesson.resources
+    : lesson?.externalUrl
+    ? [{ kind: 'tool', label: 'Open activity', url: lesson.externalUrl }]
+    : [];
+
+  return (
+    <>
+      {/* Scrim */}
+      <div
+        onClick={onClose}
+        aria-hidden={!open}
+        className="fixed inset-0 z-40 transition-opacity duration-300"
+        style={{
+          background: 'rgba(8,11,22,0.6)',
+          backdropFilter: 'blur(2px)',
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none',
+        }}
+      />
+
+      {/* Panel */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={stage?.title ?? 'Milestone'}
+        className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[720px] flex flex-col transition-transform duration-300 ease-out"
+        style={{
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          background: isLight
+            ? 'linear-gradient(180deg, #FFFFFF 0%, #F5F1E8 100%)'
+            : 'linear-gradient(180deg, var(--lr-navy-deep) 0%, var(--lr-midnight) 100%)',
+          borderLeft: '1px solid var(--border-gold)',
+          boxShadow: '-30px 0 60px -30px rgba(0,0,0,0.6)',
+        }}
+      >
+        {stage && (
+          <>
+            {/* Header */}
+            <div
+              className="flex items-start justify-between gap-4 px-7 py-5 flex-shrink-0"
+              style={{ borderBottom: '1px solid var(--border-subtle)' }}
+            >
+              <div className="min-w-0">
+                <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+                  {domain ? `${domain.number} · ${domain.label}` : `Stage ${stage.number}`} · {stage.subtitle}
+                </p>
+                <h2 className="font-(family-name:--font-italiana) text-(--lr-gold) text-2xl tracking-[0.05em] leading-tight">
+                  {stage.title}
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="p-2 rounded-lg shrink-0 hover:bg-(--surface-elevated) transition-colors"
+                style={{ border: '1px solid var(--border-subtle)' }}
+              >
+                <svg className="w-5 h-5 text-(--lr-gold)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeWidth={1.8} d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body — scrolls */}
+            <div className="flex-1 overflow-y-auto px-7 py-6 space-y-6">
+              {domain && lesson ? (
+                <>
+                  {/* Active lesson title */}
+                  <div>
+                    <p className="lr-eyebrow mb-1" style={{ color: 'var(--lr-gold-soft)' }}>
+                      Lesson {lesson.number} · {lesson.type} · {lesson.duration}
+                    </p>
+                    <h3 className="font-(family-name:--font-italiana) text-(--lr-gold) text-xl tracking-[0.04em]">
+                      {lesson.title}
+                    </h3>
+                  </div>
+
+                  {/* Real Drive video for this lesson */}
+                  {lesson.driveId ? (
+                    <div
+                      className="relative w-full overflow-hidden rounded-[12px]"
+                      style={{
+                        paddingBottom: '56.25%',
+                        background: 'var(--lr-midnight)',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      <iframe
+                        src={`https://drive.google.com/file/d/${lesson.driveId}/preview`}
+                        className="absolute inset-0 w-full h-full"
+                        allow="autoplay"
+                        allowFullScreen
+                        title={lesson.title}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="rounded-[12px] aspect-video flex items-center justify-center"
+                      style={{
+                        background: 'radial-gradient(ellipse at center, rgba(42,58,98,0.6) 0%, var(--lr-midnight) 80%)',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-lavender-dust)">
+                        Worksheet-only lesson · no video
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Lesson playlist — real lessons, click to switch */}
+                  {lessons.length > 1 && (
+                    <div>
+                      <p className="font-(family-name:--font-jura) text-[0.6rem] tracking-[0.2em] uppercase text-(--lr-gold-soft) mb-2">
+                        {lessons.length} lessons · plays in order
+                      </p>
+                      <div className="space-y-1.5">
+                        {lessons.map((l, i) => {
+                          const isActive = i === activeIdx;
+                          return (
+                            <button
+                              key={l.id}
+                              onClick={() => setActiveIdx(i)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-left transition-colors"
+                              style={{
+                                background: isActive ? 'rgba(212,190,148,0.12)' : 'transparent',
+                                border: isActive ? '1px solid var(--lr-gold)' : '1px solid var(--border-subtle)',
+                              }}
+                            >
+                              <span
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0 font-(family-name:--font-jetbrains)"
+                                style={{
+                                  background: isActive ? 'var(--lr-gold)' : 'rgba(212,190,148,0.08)',
+                                  color: isActive ? 'var(--lr-navy-deep)' : 'var(--lr-gold)',
+                                  border: '1px solid var(--lr-gold)',
+                                }}
+                              >
+                                {isActive ? '▶' : i + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-(--lr-pearl) truncate">{l.title}</p>
+                                <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+                                  {l.type} · {l.duration}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Real resources for this lesson */}
+                  {resources.length > 0 && (
+                    <div
+                      className="rounded-[12px] p-5"
+                      style={{ background: 'rgba(212,190,148,0.06)', border: '1px solid var(--border-gold)' }}
+                    >
+                      <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold)' }}>
+                        {lesson.type === 'explore' ? 'Stories & resources' : lesson.type === 'action' ? 'Action item' : 'Resources'}
+                      </p>
+                      <div className="space-y-2">
+                        {resources.map((r) => (
+                          <a
+                            key={r.url}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-colors hover:bg-white/[0.04] group"
+                            style={{ background: 'rgba(28,38,68,0.55)', border: '1px solid var(--border-subtle)' }}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-(--lr-pearl) truncate group-hover:text-(--lr-gold) transition-colors">
+                                {r.label}
+                              </p>
+                              <p className="font-(family-name:--font-jura) text-[0.55rem] tracking-[0.18em] uppercase text-(--lr-gold-soft) mt-0.5">
+                                {r.kind} · {r.hint ?? 'opens in new tab'}
+                              </p>
+                            </div>
+                            <span className="text-(--lr-gold) flex-shrink-0">↗</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Takeaways for this lesson */}
+                  {lesson.takeaways.length > 0 && (
+                    <div>
+                      <p className="lr-eyebrow mb-3" style={{ color: 'var(--lr-gold-soft)' }}>
+                        Takeaways
+                      </p>
+                      <ul className="space-y-2.5">
+                        {lesson.takeaways.map((t, i) => (
+                          <li key={i} className="flex gap-3 text-sm text-(--lr-pearl) leading-relaxed">
+                            <span className="text-(--lr-gold) mt-0.5 flex-shrink-0">◆</span>
+                            <span className="opacity-90">{t}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Stages without a module library (assessment, communication, playbook) */
+                <div className="space-y-4">
+                  <p className="text-sm text-(--lr-pearl) opacity-90 leading-relaxed">{stage.body}</p>
+                  <div
+                    className="rounded-[12px] p-5"
+                    style={{ background: 'rgba(212,190,148,0.05)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    <p className="font-(family-name:--font-jura) text-[0.65rem] tracking-[0.2em] uppercase text-(--lr-gold-soft)">
+                      {stage.id === 'assessment'
+                        ? `${stage.actionCount} questions · opens full assessment`
+                        : stage.isCapstone
+                        ? 'Assembled once every domain is complete'
+                        : 'Content for this stage is coming soon'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            <div
+              className="flex items-center gap-3 px-7 py-4 flex-shrink-0"
+              style={{ borderTop: '1px solid var(--border-subtle)' }}
+            >
+              <button
+                onClick={() => stage.route && onOpenFull(stage.route)}
+                className="lr-btn-primary flex-1"
+                disabled={!stage.route}
+              >
+                {stage.status === 'complete' ? 'Review milestone' : 'Open full module'}
+              </button>
+              <button onClick={onClose} className="lr-btn-gold">
+                Back to path
+              </button>
+            </div>
+          </>
+        )}
+      </aside>
+    </>
   );
 }
 
@@ -620,24 +892,6 @@ function Mini({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="font-(family-name:--font-jetbrains) text-(--lr-gold) text-sm whitespace-nowrap">{value}</p>
-    </div>
-  );
-}
-
-function Quest({ done, label }: { done: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span
-        className="w-5 h-5 rounded-full flex items-center justify-center text-[0.6rem] flex-shrink-0"
-        style={{
-          background: done ? 'var(--lr-gold)' : 'rgba(212,190,148,0.08)',
-          color: done ? 'var(--lr-navy-deep)' : 'var(--lr-lavender-dust)',
-          border: done ? '1px solid var(--lr-gold)' : '1px solid rgba(212,190,148,0.2)',
-        }}
-      >
-        {done ? '✓' : '·'}
-      </span>
-      <span className="text-xs text-(--lr-pearl) opacity-90">{label}</span>
     </div>
   );
 }
