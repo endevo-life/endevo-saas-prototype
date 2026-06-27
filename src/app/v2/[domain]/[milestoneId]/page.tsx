@@ -111,24 +111,27 @@ export default function MilestonePage({
         })}
       </div>
 
-      {/* Mark complete */}
-      <button
-        type="button"
-        style={{
-          marginTop: 28,
-          padding: '12px 28px',
-          borderRadius: 999,
-          background: 'transparent',
-          border: `1px solid ${color}`,
-          color,
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: 'pointer',
-        }}
-      >
-        Mark milestone complete
-      </button>
-      <span style={{ color: shell.textFaint, fontSize: 13, marginLeft: 14 }}>Auto-saves after the last video</span>
+      {/* Mark complete — right-aligned, helper text beneath (per review) */}
+      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <button
+          type="button"
+          style={{
+            padding: '12px 28px',
+            borderRadius: 999,
+            background: 'transparent',
+            border: `1px solid ${color}`,
+            color,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Mark milestone complete
+        </button>
+        <span style={{ color: shell.textFaint, fontSize: 13, marginTop: 8, textAlign: 'right' }}>
+          Auto-saves after the last video
+        </span>
+      </div>
     </AppShell>
   );
 }
@@ -231,8 +234,12 @@ function Worksheet({ color, resources }: { color: string; resources: Resource[] 
         ))}
       </div>
 
-      <Field label="Notes / who you contacted" placeholder="e.g. Maria Chen, Esq." />
-      <Field label="Reference" placeholder="e.g. Chen & Associates" />
+      <Field label="Attorney's name" placeholder="e.g. Maria Chen, Esq." />
+      <Field label="Firm" placeholder="e.g. Chen & Associates" />
+
+      {/* Contact — stacked, separately-labeled fields (per review) */}
+      <Field label="Email" placeholder="e.g. m@chen.law" type="email" />
+      <Field label="Phone" placeholder="e.g. 415-555-0142" type="tel" />
 
       {/* Checklist */}
       <p style={{ color: shell.text, fontSize: 14, marginTop: 22, marginBottom: 10 }}>Checklist</p>
@@ -309,11 +316,12 @@ function Worksheet({ color, resources }: { color: string; resources: Resource[] 
   );
 }
 
-function Field({ label, placeholder }: { label: string; placeholder: string }) {
+function Field({ label, placeholder, type = 'text' }: { label: string; placeholder: string; type?: string }) {
   return (
     <div style={{ marginTop: 16 }}>
       <p style={{ color: shell.textDim, fontSize: 13, marginBottom: 6 }}>{label}</p>
       <input
+        type={type}
         placeholder={placeholder}
         style={{
           width: '100%',

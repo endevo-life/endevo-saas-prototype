@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildJourney } from './journey';
-import { domainColors, shell, type DomainKey } from './domainColors';
+import { shell, nav } from './domainColors';
 import { mockEmployees } from '@/lib/mock-data';
 
 export interface Crumb {
@@ -65,15 +65,15 @@ export default function AppShell({
               width: 24,
               height: 24,
               borderRadius: '50%',
-              border: `2px solid ${domainColors.legal.base}`,
+              border: `2px solid ${nav.base}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: domainColors.legal.base }} />
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: nav.base }} />
           </span>
-          <span style={{ color: domainColors.legal.base, letterSpacing: '0.18em', fontSize: 13, textTransform: 'lowercase' }}>
+          <span style={{ color: nav.base, letterSpacing: '0.18em', fontSize: 13, textTransform: 'lowercase' }}>
             Legacy readiness os
           </span>
         </Link>
@@ -134,7 +134,6 @@ export default function AppShell({
 
           {journey.map((d) => {
             const active = pathname?.startsWith(`/v2/${d.key}`);
-            const color = domainColors[d.key as DomainKey].base;
             const done = d.completeCount === d.totalCount && d.totalCount > 0;
             return (
               <Link
@@ -146,8 +145,8 @@ export default function AppShell({
                   borderRadius: 10,
                   marginBottom: 4,
                   textDecoration: 'none',
-                  background: active ? domainColors[d.key as DomainKey].tint : 'transparent',
-                  border: active ? `1px solid ${domainColors[d.key as DomainKey].border}` : '1px solid transparent',
+                  background: active ? nav.tint : 'transparent',
+                  border: active ? `1px solid ${nav.border}` : '1px solid transparent',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -156,8 +155,8 @@ export default function AppShell({
                       width: 9,
                       height: 9,
                       borderRadius: '50%',
-                      background: done || active ? color : 'transparent',
-                      border: `1.5px solid ${color}`,
+                      background: done || active ? nav.base : 'transparent',
+                      border: `1.5px solid ${nav.base}`,
                       flexShrink: 0,
                     }}
                   />
@@ -217,8 +216,8 @@ function RailLink({ href, label, active, muted }: { href: string; label: string;
         fontSize: muted ? 12 : 14,
         fontWeight: active ? 600 : 400,
         color: muted ? shell.textFaint : active ? shell.text : shell.textDim,
-        background: active ? shell.panelRaised : 'transparent',
-        border: active ? `1px solid ${shell.border}` : '1px solid transparent',
+        background: active ? nav.tint : 'transparent',
+        border: active ? `1px solid ${nav.border}` : '1px solid transparent',
       }}
     >
       {label}

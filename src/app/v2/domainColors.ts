@@ -41,3 +41,16 @@ export const shell = {
   textDim: '#94a3b8',
   textFaint: '#64748b',
 };
+
+/**
+ * Navigation accent — one consistent turquoise/green used across all nav
+ * chrome (logo, left-rail active state). Per Theresa's review: keeping the
+ * nav teal stops it competing with the amber call-to-action buttons in the
+ * center pane, which are the actions we actually want the eye to land on.
+ */
+export const nav = {
+  base: '#14b8a6',
+  tint: '#14b8a614',
+  border: '#14b8a640',
+  onColor: '#0f172a',
+};
